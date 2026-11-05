@@ -120,6 +120,10 @@ class UserStore:
         row = self._db.fetchone("SELECT * FROM users WHERE username = ?", (username,))
         return dict(row) if row else None
 
+    def list_users(self) -> list[dict]:
+        rows = self._db.fetchall("SELECT id, username FROM users ORDER BY id")
+        return [dict(r) for r in rows]
+
     def set_face_template(self, user_id: int, face_template: bytes) -> None:
         self._db.execute("UPDATE users SET face_template = ? WHERE id = ?", (face_template, user_id))
 

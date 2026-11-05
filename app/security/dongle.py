@@ -14,6 +14,8 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import os
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -122,3 +124,27 @@ def find_dongle(drives, registry: dict) -> DongleInfo:
 def hmac_challenge_response(key: bytes, nonce: bytes) -> bytes:
     """Challenge-response HMAC-SHA256 (opsional, penguatan)."""
     return hmac.new(key, nonce, hashlib.sha256).digest()
+
+
+def provision_dongle(drive: str | Path, registry_path: str | Path) -> DongleInfo:
+    """Siapkan flashdisk sebagai dongle: tulis berkas rahasia + daftarkan.
+
+    Menulis `.dongle.key` (32 byte acak) & `.dongle.id` (UUID) ke drive,
+    lalu memperbarui registry lokal dengan digest kunci. Idempotent terhadap
+    dongle baru (setiap panggilan membuat identitas baru).
+    """
+    drive_path = Path(drive)
+    if not drive_path.is_dir():
+        raise DongleMissingError(f"folder drive tidak ditemukan: {drive_path}")
+    key = os.urandom(32)
+    dongle_id = str(uuid.uuid4())
+    (drive_path / DONGLE_KEY_FILENAME).write_bytes(key)
+    (drive_path / DONGLE_ID_FILENAME).write_text(dongle_id, encoding="utf-8")
+
+    registry_file = Path(registry_path)
+    registry = load_registry(registry_file)
+    registry[dongle_id] = {"digest": hashlib.sha256(key).hexdigest()}
+    registry_file.parent.mkdir(parents=True, exist_ok=True)
+    registry_file.write_text(json.dumps(registry, indent=2), encoding="utf-8")
+
+    return DongleInfo(drive=str(drive_path), dongle_id=dongle_id, key=key)

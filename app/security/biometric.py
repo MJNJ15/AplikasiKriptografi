@@ -11,6 +11,7 @@ untuk cv2.face.LBPHFaceRecognizer_create.
 
 from __future__ import annotations
 
+import io
 from pathlib import Path
 from typing import Optional, Sequence
 
@@ -42,6 +43,7 @@ class FaceBiometrics:
         self._recognizer = cv2.face.LBPHFaceRecognizer_create()
         self.threshold = threshold
         self._trained = False
+        self._samples: list[np.ndarray] = []
 
     @staticmethod
     def to_gray(frame: np.ndarray) -> np.ndarray:
@@ -81,7 +83,28 @@ class FaceBiometrics:
         if not grays:
             raise ValueError("tidak ada wajah yang bisa didaftarkan")
         labels = np.zeros(len(grays), dtype=int)
+        self._samples = grays
         self._recognizer.train(grays, labels)
+        self._trained = True
+
+    def save_template(self) -> bytes:
+        """Serialisasi template (sampel wajah normalisasi) untuk disimpan
+        (mis. dienkripsi lalu disimpan di DB)."""
+        if not self._samples:
+            raise RuntimeError("belum ada template wajah (enroll dulu)")
+        buf = io.BytesIO()
+        np.savez(buf, images=np.stack(self._samples))
+        return buf.getvalue()
+
+    def load_template(self, blob: bytes) -> None:
+        """Muat template hasil save_template dan latih ulang recognizer."""
+        data = np.load(io.BytesIO(blob))
+        images = data["images"]
+        if images.ndim != 3:
+            raise ValueError("template wajah tidak valid")
+        self._samples = [images[i] for i in range(images.shape[0])]
+        labels = np.zeros(len(self._samples), dtype=int)
+        self._recognizer.train(self._samples, labels)
         self._trained = True
 
     def predict(self, frame: np.ndarray) -> tuple[int, float]:

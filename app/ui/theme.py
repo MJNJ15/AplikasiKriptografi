@@ -210,6 +210,18 @@ QPushButton#smallBtn {{
 QPushButton#smallBtn:hover {{
     background: #dfe4f2;
 }}
+QPushButton#chooseBtn {{
+    background: {ACCENT};
+    color: #ffffff;
+    border-radius: 8px;
+    padding: 5px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    min-height: 28px;
+}}
+QPushButton#chooseBtn:hover {{
+    background: {ACCENT_DARK};
+}}
 
 /* ---------- Scrollbar ---------- */
 QScrollBar:vertical {{
@@ -488,6 +500,18 @@ QPushButton#smallBtn {{
 }}
 QPushButton#smallBtn:hover {{
     background: #404859;
+}}
+QPushButton#chooseBtn {{
+    background: {ACCENT};
+    color: #ffffff;
+    border-radius: 8px;
+    padding: 5px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    min-height: 28px;
+}}
+QPushButton#chooseBtn:hover {{
+    background: {ACCENT_DARK};
 }}
 
 QScrollBar:vertical {{

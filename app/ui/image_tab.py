@@ -45,9 +45,9 @@ class ImagePanel(QWidget):
         self._image_path: Optional[Path] = None
         self._image: Optional[object] = None
 
-        # Tombol pilih gambar — kecil, di kiri
+        # Tombol pilih gambar — biru seperti aksi, agak lebih besar
         self.choose_btn = QPushButton("Pilih Gambar…")
-        self.choose_btn.setObjectName("smallBtn")
+        self.choose_btn.setObjectName("chooseBtn")
         self.choose_btn.clicked.connect(self._on_choose)
 
         top_row = QHBoxLayout()
@@ -132,9 +132,14 @@ class ImagePanel(QWidget):
         self.status_label.setText(f"Gambar: {self._image_path.name}")
 
     def _on_reset(self) -> None:
-        """Bersihkan kolom pesan saja (gambar & kata sandi tetap)."""
+        """Reset penuh: bersihkan pesan, kata sandi, dan gambar yang dipilih."""
         self.message_edit.clear()
-        self.status_label.setText("Pesan dibersihkan.")
+        self.password_edit.clear()
+        self._image = None
+        self._image_path = None
+        self.preview_label.setPixmap(QPixmap())
+        self.preview_label.setText("Belum ada gambar dipilih.")
+        self.status_label.setText("Semua input dibersihkan.")
 
     def _on_action(self) -> None:
         if self._image is None or self._image_path is None:

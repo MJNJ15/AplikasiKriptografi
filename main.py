@@ -27,6 +27,7 @@ from app.security.boot import (
     registry_path,
 )
 from app.security.dongle import DongleError, provision_dongle
+from app.ui.face_dialogs import EnrollFaceDialog, VerifyFaceDialog
 from app.ui.login_dialog import LoginDialog
 from app.ui.main_window import MainWindow
 from app.ui.theme import apply_theme
@@ -55,15 +56,15 @@ def _prompt_register(auth: AuthManager, store: UserStore, dongle_id: str, db_key
         print("Password kosong atau tidak sama.")
     auth.register(username, password, dongle_id)
 
-    print("Mencoba merekam wajah (webcam)…")
-    template = face_login.capture_and_enroll()
-    if template:
-        blob = face_login.encrypt_template(db_key, template)
+    print("Membuka jendela webcam untuk merekam wajah…")
+    enroll_dlg = EnrollFaceDialog()
+    if enroll_dlg.exec() == EnrollFaceDialog.DialogCode.Accepted and enroll_dlg.template_bytes:
+        blob = face_login.encrypt_template(db_key, enroll_dlg.template_bytes)
         user = store.get_user_by_username(username)
         store.set_face_template(user["id"], blob)
         print("Template wajah tersimpan (terenkripsi).")
     else:
-        print("Kamera tidak tersedia/wajah tak terdeteksi — akun tanpa biometrik.")
+        print("Perekaman dibatalkan/kamera tidak tersedia — akun tanpa biometrik.")
     return username
 
 
@@ -115,9 +116,16 @@ def run(argv: Optional[list[str]] = None) -> int:
         return True, ""
 
     def face_verify(username: str) -> tuple[bool, str]:
-        ok, msg = face_login.try_face_login(store, username, db_key)
-        if not ok:
-            return False, msg
+        user = store.get_user_by_username(username)
+        if not user or not user.get("face_template"):
+            return False, "akun ini belum punya template wajah (jalankan --setup)"
+        try:
+            template_raw = face_login.decrypt_template(db_key, bytes(user["face_template"]))
+        except Exception:
+            return False, "template wajah rusak/tidak valid"
+        verify_dlg = VerifyFaceDialog(template_raw)
+        if verify_dlg.exec() != VerifyFaceDialog.DialogCode.Accepted:
+            return False, "verifikasi wajah dibatalkan/gagal"
         # Verifikasi wajah sukses → tetap butuh kata sandi untuk membangun
         # sesi (dua faktor), sesuai rancangan §4.2–4.3.
         dlg = holder["dlg"]

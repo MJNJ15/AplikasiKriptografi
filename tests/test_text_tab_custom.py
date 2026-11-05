@@ -107,7 +107,7 @@ def test_clear_input_button_only_clears_input(qapp):
     _fill_keys(p)
     p.input_edit.setPlainText("pesan asli")
     p.output_edit.setPlainText("HASIL-LAMA")
-    p.clear_input_btn.click()
+    p.reset_btn.click()
     assert p.input_edit.toPlainText() == ""
     assert p.output_edit.toPlainText() == "HASIL-LAMA"
     assert p.vigenere_edit.text() == "LEMON"

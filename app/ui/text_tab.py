@@ -46,27 +46,28 @@ class CryptoPanel(QWidget):
         self.status_label = QLabel("Siap.")
         self._key_error = ""
 
-        self.vigenere_edit = self._key_line("Kunci Vigenère (huruf/kata)")
-        self.caesar_edit = self._key_line("Kunci Caesar (shift/kata)")
-        self.lfsr_edit = self._key_line("Kunci LFSR — seed (min. 4 karakter)")
-        self.des_edit = self._key_line("Kunci DES (8 karakter; selain itu di-hash)")
-        self.mac_edit = self._key_line("Kunci HMAC-SHA256")
+        self.reset_btn = QPushButton("Reset")
+        self.reset_btn.setObjectName("resetBtn")
+        self.reset_btn.clicked.connect(self._on_reset)
+
+        self.vigenere_edit = self._key_line("contoh: LEMON")
+        self.caesar_edit = self._key_line("contoh: C")
+        self.lfsr_edit = self._key_line("contoh: SEED1234")
+        self.des_edit = self._key_line("contoh: RAHAS8!")
+        self.mac_edit = self._key_line("contoh: kunci-hmac-2025")
 
         self.action_btn = QPushButton("Enkripsi" if is_encrypt else "Dekripsi")
         self.action_btn.clicked.connect(self._on_action)
 
-        self.clear_input_btn = QPushButton("Bersihkan Input")
-        self.clear_input_btn.setObjectName("secondaryBtn")
-        self.clear_input_btn.clicked.connect(self._on_clear_input)
-
         # Tombol menempel ke kanan
         btn_row = QHBoxLayout()
         btn_row.addStretch(1)
-        btn_row.addWidget(self.clear_input_btn)
         btn_row.addWidget(self.action_btn)
 
         key_grid = QGridLayout()
         key_grid.setColumnStretch(1, 1)
+        key_grid.setHorizontalSpacing(16)
+        key_grid.setVerticalSpacing(10)
         key_grid.addWidget(QLabel("Vigenère:"), 0, 0)
         key_grid.addWidget(self.vigenere_edit, 0, 1)
         key_grid.addWidget(QLabel("Caesar:"), 1, 0)
@@ -79,13 +80,15 @@ class CryptoPanel(QWidget):
         key_grid.addWidget(self.mac_edit, 4, 1)
 
         layout = QVBoxLayout(self)
+        layout.setSpacing(10)
         layout.addWidget(QLabel("Masukan:"))
         layout.addWidget(self.input_edit)
-        layout.addWidget(QLabel("Kunci per algoritma (wajib):"))
+        layout.addWidget(QLabel("Masukkan Kunci Algoritma:"))
         layout.addLayout(key_grid)
         layout.addLayout(btn_row)
         layout.addWidget(QLabel("Hasil:"))
         layout.addWidget(self.output_edit)
+        layout.addWidget(self.reset_btn)
         layout.addWidget(self.status_label)
 
     @staticmethod
@@ -141,7 +144,7 @@ class CryptoPanel(QWidget):
         self.output_edit.setPlainText(result)
         self.status_label.setText(success_msg)
 
-    def _on_clear_input(self) -> None:
+    def _on_reset(self) -> None:
         """Bersihkan kolom masukan saja (kunci & hasil tetap)."""
         self.input_edit.clear()
         self.status_label.setText("Input dibersihkan.")

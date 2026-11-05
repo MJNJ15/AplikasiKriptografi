@@ -84,7 +84,7 @@ def run(argv: Optional[list[str]] = None) -> int:
         return 0
 
     app = QApplication.instance() or QApplication(sys.argv)
-    apply_theme(app)
+    apply_theme(app, dark=True)  # dark mode default
 
     try:
         info = boot_with_dongle(args.data_dir)

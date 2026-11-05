@@ -186,6 +186,17 @@ QPushButton#themeToggle {{
 QPushButton#themeToggle:hover {{
     background: #dfe4f2;
 }}
+QPushButton#resetBtn {{
+    background: #f0b429;
+    color: #3a2c00;
+    border-radius: 6px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 600;
+}}
+QPushButton#resetBtn:hover {{
+    background: #f5c542;
+}}
 
 /* ---------- Scrollbar ---------- */
 QScrollBar:vertical {{
@@ -440,6 +451,17 @@ QPushButton#themeToggle {{
 }}
 QPushButton#themeToggle:hover {{
     background: #404859;
+}}
+QPushButton#resetBtn {{
+    background: #d9a514;
+    color: #1a1400;
+    border-radius: 6px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 600;
+}}
+QPushButton#resetBtn:hover {{
+    background: #eab308;
 }}
 
 QScrollBar:vertical {{

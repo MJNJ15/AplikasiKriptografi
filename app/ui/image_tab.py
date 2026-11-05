@@ -45,9 +45,14 @@ class ImagePanel(QWidget):
         self._image_path: Optional[Path] = None
         self._image: Optional[object] = None
 
-        # Tombol pilih gambar — paling atas
+        # Tombol pilih gambar — kecil, di kiri
         self.choose_btn = QPushButton("Pilih Gambar…")
+        self.choose_btn.setObjectName("smallBtn")
         self.choose_btn.clicked.connect(self._on_choose)
+
+        top_row = QHBoxLayout()
+        top_row.addWidget(self.choose_btn)
+        top_row.addStretch(1)
 
         # Preview gambar yang dipilih
         self.preview_label = QLabel("Belum ada gambar dipilih.")
@@ -64,23 +69,33 @@ class ImagePanel(QWidget):
         if not is_embed:
             self.message_edit.setReadOnly(True)
 
+        # Preview (kiri) + input pesan (kanan) dalam satu baris
+        content_row = QHBoxLayout()
+        content_row.addWidget(self.preview_label)
+        content_row.addWidget(self.message_edit, 1)
+
         self.password_edit = QLineEdit()
         self.password_edit.setPlaceholderText("Kata sandi (kunci permutasi)")
         self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
 
         self.action_btn = QPushButton("Sisip Pesan" if is_embed else "Ekstrak Pesan")
         self.action_btn.clicked.connect(self._on_action)
-        self.status_label = QLabel("Siap.")
 
-        # Tombol aksi rata kanan
+        self.reset_btn = QPushButton("Reset")
+        self.reset_btn.setObjectName("resetBtn")
+        self.reset_btn.clicked.connect(self._on_reset)
+
+        # Tombol aksi rata kanan; reset di samping kirinya
         row = QHBoxLayout()
         row.addStretch(1)
+        row.addWidget(self.reset_btn)
         row.addWidget(self.action_btn)
 
+        self.status_label = QLabel("Siap.")
+
         layout = QVBoxLayout(self)
-        layout.addWidget(self.choose_btn)
-        layout.addWidget(self.preview_label)
-        layout.addWidget(self.message_edit)
+        layout.addLayout(top_row)
+        layout.addLayout(content_row)
         layout.addWidget(QLabel("Kata sandi:"))
         layout.addWidget(self.password_edit)
         layout.addLayout(row)
@@ -115,6 +130,11 @@ class ImagePanel(QWidget):
         self._image = img
         self._show_preview()
         self.status_label.setText(f"Gambar: {self._image_path.name}")
+
+    def _on_reset(self) -> None:
+        """Bersihkan kolom pesan saja (gambar & kata sandi tetap)."""
+        self.message_edit.clear()
+        self.status_label.setText("Pesan dibersihkan.")
 
     def _on_action(self) -> None:
         if self._image is None or self._image_path is None:

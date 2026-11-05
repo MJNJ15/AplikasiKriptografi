@@ -12,8 +12,10 @@ from PySide6.QtWidgets import QMainWindow, QTabWidget, QWidget
 
 from ..core.keys import make_text_keys, derive_subkey
 from ..db.database import Database, MessageStore, UserStore
+from .asset_tab import AssetTab
 from .db_tab import DbTab
 from .file_tab import FileTab
+from .image_tab import ImageTab
 from .text_tab import TextTab
 
 
@@ -37,10 +39,14 @@ class MainWindow(QMainWindow):
         file_tab = FileTab(chacha_key)
         msg_store = MessageStore(db, column_key)
         db_tab = DbTab(msg_store, user_id)
+        image_tab = ImageTab()
+        asset_tab = AssetTab()
 
         tabs = QTabWidget()
         tabs.addTab(text_tab, "Teks")
         tabs.addTab(file_tab, "File")
         tabs.addTab(db_tab, "Basis Data")
+        tabs.addTab(image_tab, "Gambar")
+        tabs.addTab(asset_tab, "Aset")
         self.setCentralWidget(tabs)
         self.resize(760, 560)

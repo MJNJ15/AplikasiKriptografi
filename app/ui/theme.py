@@ -134,6 +134,48 @@ QStatusBar {{
     color: #475467;
 }}
 
+/* ---------- Login (card) ---------- */
+#loginCard {{
+    background: #ffffff;
+    border: 1px solid #dfe3ec;
+    border-radius: 16px;
+}}
+#titleLabel {{
+    font-size: 24px;
+    font-weight: 700;
+    color: #212b36;
+}}
+#subtitleLabel {{
+    color: #667085;
+    font-size: 13px;
+}}
+#fieldLabel {{
+    font-weight: 600;
+    color: #344054;
+}}
+QLineEdit#inputField {{
+    padding: 10px 12px;
+    font-size: 14px;
+    min-height: 22px;
+}}
+QPushButton#primaryBtn {{
+    min-height: 42px;
+    font-size: 14px;
+}}
+QPushButton#secondaryBtn {{
+    background: #eef1f8;
+    color: #344054;
+    min-height: 42px;
+    font-size: 14px;
+}}
+QPushButton#secondaryBtn:hover {{
+    background: #dfe4f2;
+}}
+#statusLabel {{
+    color: #98a2b3;
+    font-size: 12px;
+}}
+
 /* ---------- Scrollbar ---------- */
 QScrollBar:vertical {{
     background: transparent;

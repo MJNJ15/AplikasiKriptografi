@@ -19,7 +19,9 @@ import cv2
 import numpy as np
 
 FACE_SIZE = (100, 100)
-DEFAULT_MATCH_THRESHOLD = 80.0
+# Hasil diagnostik webcam (lihat catatan): confidence self-match ~116–128,
+# sehingga default 80 terlalu ketat. 150 memberi margin untuk cahaya/pose.
+DEFAULT_MATCH_THRESHOLD = 150.0
 EYE_MIN_SIZE = (20, 20)
 
 _DEFAULT_DATA_DIR = Path(__file__).resolve().parent / "data"

@@ -11,7 +11,9 @@ time 3, parallelism 4) — dapat disesuaikan bila terlalu berat untuk uji.
 
 from __future__ import annotations
 
+import hashlib
 import os
+from dataclasses import dataclass
 
 from cryptography.exceptions import InvalidKey
 from cryptography.hazmat.primitives import hashes
@@ -83,6 +85,32 @@ def derive_subkey(app_key: bytes, name: str, length: int = DEFAULT_KEY_LEN) -> b
         raise ValueError(f"sub-kunci tak dikenal: {name!r}")
     hkdf = HKDF(algorithm=hashes.SHA256(), length=length, salt=None, info=SUBKEY_INFO[name])
     return hkdf.derive(app_key)
+
+
+@dataclass(frozen=True)
+class TextKeys:
+    """Kunci per-algoritma untuk super enkripsi teks (§4.4).
+
+    Setiap algoritma memakai kunci masukannya sendiri:
+      - vigenere: kunci kata Vigenère
+      - caesar:   kunci shift Caesar
+      - lfsr:     seed LFSR (keystream), minimal 4 byte
+      - des:      kunci DES (8 byte efektif — dinormalisasi via derive_des_key)
+      - mac:      kunci HMAC-SHA256
+    """
+
+    vigenere: bytes
+    caesar: bytes
+    lfsr: bytes
+    des: bytes
+    mac: bytes
+
+
+def derive_des_key(raw: bytes) -> bytes:
+    """Normalisasi kunci DES → tepat 8 byte (SHA-256 bila bukan 8 byte)."""
+    if len(raw) == 8:
+        return raw
+    return hashlib.sha256(raw).digest()[:8]
 
 
 def make_text_keys(app_key: bytes) -> tuple[bytes, bytes, bytes]:

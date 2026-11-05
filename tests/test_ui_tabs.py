@@ -32,14 +32,18 @@ def qapp():
 
 def test_text_tab_encrypt_decrypt(qapp):
     tab = TextTab()
-    tab.key_edit.setText("kunci-uji-sesi")
+    tab.vigenere_edit.setText("LEMON")
+    tab.caesar_edit.setText("C")
+    tab.lfsr_edit.setText("SEED1234")
+    tab.des_edit.setText("DESKEY8!")
+    tab.mac_edit.setText("MAC-KUNCI-12345678")
     tab.input_edit.setPlainText("Halo dunia rahasia 123!")
     tab.encrypt_btn.click()
     blob = tab.output_edit.toPlainText()
     assert blob
-    keys = tab._custom_keys()
+    keys = tab._parse_keys()
     assert keys is not None
-    assert decrypt_text(blob, *keys) == "Halo dunia rahasia 123!"
+    assert decrypt_text(blob, keys) == "Halo dunia rahasia 123!"
     tab.decrypt_btn.click()
     assert tab.input_edit.toPlainText() == "Halo dunia rahasia 123!"
 

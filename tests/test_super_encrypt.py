@@ -1,42 +1,56 @@
-"""Uji super enkripsi teks."""
+"""Uji super enkripsi teks (TextKeys per-algoritma)."""
 
 from __future__ import annotations
 
 import pytest
 
-from app.core.keys import make_text_keys
+from app.core.keys import TextKeys
 from app.core.super_encrypt import decrypt_text, encrypt_text
 
-APP_KEY = bytes(range(32))
-BAD_APP_KEY = bytes(0xFF ^ i for i in range(32))
+KEYS = TextKeys(
+    vigenere=b"LEMON",
+    caesar=b"C",
+    lfsr=b"SEED1234",
+    des=b"DESKEY8!",
+    mac=b"MAC-KUNCI-12345678",
+)
+OTHER_KEYS = TextKeys(
+    vigenere=b"ORANGE",
+    caesar=b"X",
+    lfsr=b"OTHERSEED",
+    des=b"RAHAS8!",
+    mac=b"MAC-BERBEDA-9999",
+)
 
 
 def test_roundtrip():
-    classic_key, des_key, mac_key = make_text_keys(APP_KEY)
     text = "Pesan rahasia untuk uji super-enkripsi. 123!"
-    blob = encrypt_text(text, classic_key, des_key, mac_key)
-    assert decrypt_text(blob, classic_key, des_key, mac_key) == text
+    blob = encrypt_text(text, KEYS)
+    assert decrypt_text(blob, KEYS) == text
 
 
-def test_ciphertext_nondeterministic():
-    keys = make_text_keys(APP_KEY)
-    text = "pesan yang sama"
-    a = encrypt_text(text, *keys)
-    b = encrypt_text(text, *keys)
+def test_same_keys_roundtrip_repeatable():
+    blob = encrypt_text("pesan yang sama", KEYS)
+    assert decrypt_text(blob, KEYS) == "pesan yang sama"
+
+    blob2 = encrypt_text("pesan yang sama", KEYS)
+    assert decrypt_text(blob2, KEYS) == "pesan yang sama"
+
+
+def test_different_keys_give_different_ciphertext():
+    a = encrypt_text("pesan yang sama", KEYS)
+    b = encrypt_text("pesan yang sama", OTHER_KEYS)
     assert a != b
 
 
 def test_wrong_key_fails():
-    good = make_text_keys(APP_KEY)
-    bad = make_text_keys(BAD_APP_KEY)
-    blob = encrypt_text("rahasia", *good)
+    blob = encrypt_text("rahasia", KEYS)
     with pytest.raises(ValueError):
-        decrypt_text(blob, *bad)
+        decrypt_text(blob, OTHER_KEYS)
 
 
 def test_tampered_blob_fails():
-    keys = make_text_keys(APP_KEY)
-    blob = encrypt_text("jangan diubah", *keys)
+    blob = encrypt_text("jangan diubah", KEYS)
     tampered = blob[:-4] + ("AAAA" if blob[-4:] != "AAAA" else "BBBB")
     with pytest.raises(ValueError):
-        decrypt_text(tampered, *keys)
+        decrypt_text(tampered, KEYS)

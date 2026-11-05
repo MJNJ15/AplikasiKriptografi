@@ -17,6 +17,7 @@ from .db_tab import DbTab
 from .file_tab import FileTab
 from .image_tab import ImageTab
 from .text_tab import TextTab
+from .theme import make_theme_toggle_button
 
 WINDOW_WIDTH = 1100
 WINDOW_HEIGHT = 720
@@ -53,3 +54,4 @@ class MainWindow(QMainWindow):
         tabs.addTab(asset_tab, "Aset")
         self.setCentralWidget(tabs)
         self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
+        self.statusBar().addPermanentWidget(make_theme_toggle_button())

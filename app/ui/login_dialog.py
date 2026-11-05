@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
 )
 
 from .main_window import WINDOW_HEIGHT, WINDOW_WIDTH
+from .theme import make_theme_toggle_button
 
 CARD_WIDTH = 460
 
@@ -105,6 +106,11 @@ class LoginDialog(QDialog):
         outer.addStretch(1)
         outer.addWidget(card, 0, Qt.AlignmentFlag.AlignHCenter)
         outer.addStretch(1)
+
+        footer = QHBoxLayout()
+        footer.addStretch(1)
+        footer.addWidget(make_theme_toggle_button())
+        outer.addLayout(footer)
 
     def _on_login(self) -> None:
         username = self.username_edit.text().strip()

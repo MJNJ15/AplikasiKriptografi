@@ -10,7 +10,7 @@ from typing import Optional
 
 from PySide6.QtWidgets import QMainWindow, QTabWidget, QWidget
 
-from ..core.keys import make_text_keys, derive_subkey
+from ..core.keys import derive_subkey
 from ..db.database import Database, MessageStore, UserStore
 from .asset_tab import AssetTab
 from .db_tab import DbTab
@@ -35,11 +35,10 @@ class MainWindow(QMainWindow):
         super().__init__(parent)
         self.setWindowTitle("Aplikasi Kriptografi")
 
-        classic_key, des_key, mac_key = make_text_keys(app_key)
         chacha_key = derive_subkey(app_key, "chacha")
         column_key = derive_subkey(app_key, "db")
 
-        text_tab = TextTab(lambda: (classic_key, des_key, mac_key))
+        text_tab = TextTab()
         file_tab = FileTab(chacha_key)
         msg_store = MessageStore(db, column_key)
         db_tab = DbTab(msg_store, user_id)

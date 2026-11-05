@@ -1,7 +1,7 @@
 """Tab Teks: super enkripsi (klasik → modern) — §4.4.
 
-Memakai `TextTab` dengan callback `text_keys_provider` (kunci sesi) sebagai
-default. Jika kolom "Kunci kustom" diisi, kunci itulah yang dipakai
+Kunci WAJIB diisi pada kolom "Kunci kustom"; dari kunci tersebut diturunkan
+kunci terpisah untuk tiap algoritma (klasik, DES, HMAC) — semuanya berbeda
 (lihat keys.keys_from_custom). Tombol aksi rata kanan.
 """
 
@@ -27,10 +27,12 @@ from ..core.super_encrypt import decrypt_text, encrypt_text
 class TextTab(QWidget):
     def __init__(
         self,
-        text_keys_provider: Callable[[], tuple[bytes, bytes, bytes]],
+        text_keys_provider: Optional[Callable[[], tuple[bytes, bytes, bytes]]] = None,
         parent: Optional[QWidget] = None,
     ) -> None:
         super().__init__(parent)
+        # Dipertahankan demi kompatibilitas konstruktor; TIDAK dipakai lagi.
+        # Kunci sekarang wajib dari kolom kustom.
         self._keys_provider = text_keys_provider
 
         self.input_edit = QPlainTextEdit()
@@ -65,19 +67,28 @@ class TextTab(QWidget):
         layout.addWidget(self.output_edit)
         layout.addWidget(self.status_label)
 
-    def _keys(self) -> tuple[bytes, bytes, bytes]:
+    def _custom_keys(self) -> Optional[tuple[bytes, bytes, bytes]]:
+        """Kunci kustom wajib; None bila kosong/tidak valid."""
         custom = self.key_edit.text()
-        if custom.strip():
+        if not custom.strip():
+            return None
+        try:
             return keys_from_custom(custom.encode("utf-8"))
-        return self._keys_provider()
+        except ValueError as exc:
+            self.status_label.setText(str(exc))
+            return None
 
     def _on_encrypt(self) -> None:
         text = self.input_edit.toPlainText()
         if not text:
             self.status_label.setText("Masukan kosong.")
             return
+        keys = self._custom_keys()
+        if keys is None:
+            self.status_label.setText("Kunci wajib diisi (minimal 8 karakter).")
+            return
         try:
-            blob = encrypt_text(text, *self._keys())
+            blob = encrypt_text(text, *keys)
         except Exception as exc:  # noqa: BLE001
             QMessageBox.warning(self, "Enkripsi gagal", str(exc))
             return
@@ -89,8 +100,12 @@ class TextTab(QWidget):
         if not blob:
             self.status_label.setText("Belum ada hasil untuk didekripsi.")
             return
+        keys = self._custom_keys()
+        if keys is None:
+            self.status_label.setText("Kunci wajib diisi (minimal 8 karakter).")
+            return
         try:
-            text = decrypt_text(blob, *self._keys())
+            text = decrypt_text(blob, *keys)
         except Exception as exc:  # noqa: BLE001
             QMessageBox.warning(self, "Dekripsi gagal", str(exc))
             return

@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Data aplikasi & rahasia lokal
+*.db
+*.db-journal
+*.sqlite
+DongleRegistry.json
+config.local.json
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

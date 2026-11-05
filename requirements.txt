@@ -1,0 +1,13 @@
+PySide6>=6.8
+cryptography>=43
+opencv-python>=4.10
+numpy>=2
+Pillow>=10
+psutil>=5.9
+
+# Dev / uji
+pytest>=8
+
+# Bindings SQLCipher untuk SQLite terenkripsi (§4.6) —
+# tersedia sebagai pysqlcipher3 / sqlcipher3; bila tidak ada di
+# platform ini, bahas ulang pemasangan (lihat rancangan §4.6).

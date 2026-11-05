@@ -92,3 +92,23 @@ def make_text_keys(app_key: bytes) -> tuple[bytes, bytes, bytes]:
         derive_subkey(app_key, "des", length=8),
         derive_subkey(app_key, "mac", length=32),
     )
+
+
+def keys_from_custom(custom_key: bytes) -> tuple[bytes, bytes, bytes]:
+    """Turunkan sub-kunci teks (classic/des/mac) dari kunci kustom pengguna.
+
+    Dipakai TextTab ketika kolom "Kunci kustom" diisi; deterministik terhadap
+    kunci yang sama, dan berbeda dari kunci sesi.
+    """
+    if not custom_key or len(custom_key) < 8:
+        raise ValueError("kunci kustom minimal 8 byte")
+
+    def _hkdf(info: bytes, length: int) -> bytes:
+        hkdf = HKDF(algorithm=hashes.SHA256(), length=length, salt=None, info=info)
+        return hkdf.derive(custom_key)
+
+    return (
+        _hkdf(b"text-classic", 16),
+        _hkdf(b"text-des", 8),
+        _hkdf(b"text-mac", 32),
+    )

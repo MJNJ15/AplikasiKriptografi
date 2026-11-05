@@ -1,7 +1,8 @@
 """Tab Teks: super enkripsi (klasik → modern) — §4.4.
 
-Memakai `TextTab` dengan callback `text_keys_provider` yang mengembalikan
-(classic_key, des_key, mac_key) dari sesi aktif (lihat keys.make_text_keys).
+Memakai `TextTab` dengan callback `text_keys_provider` (kunci sesi) sebagai
+default. Jika kolom "Kunci kustom" diisi, kunci itulah yang dipakai
+(lihat keys.keys_from_custom). Tombol aksi rata kanan.
 """
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ from typing import Callable, Optional
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
@@ -18,6 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..core.keys import keys_from_custom
 from ..core.super_encrypt import decrypt_text, encrypt_text
 
 
@@ -37,25 +40,35 @@ class TextTab(QWidget):
         self.output_edit.setPlaceholderText("Hasil (Base64) akan tampil di sini…")
         self.status_label = QLabel("Siap.")
 
+        self.key_edit = QLineEdit()
+        self.key_edit.setPlaceholderText("Kunci kustom (opsional — kosongkan utk kunci sesi)")
+        self.key_edit.setEchoMode(QLineEdit.EchoMode.Password)
+
         self.encrypt_btn = QPushButton("Enkripsi")
         self.decrypt_btn = QPushButton("Dekripsi")
         self.encrypt_btn.clicked.connect(self._on_encrypt)
         self.decrypt_btn.clicked.connect(self._on_decrypt)
 
+        # Tombol menempel ke kanan
         btn_row = QHBoxLayout()
+        btn_row.addStretch(1)
         btn_row.addWidget(self.encrypt_btn)
         btn_row.addWidget(self.decrypt_btn)
-        btn_row.addStretch(1)
 
         layout = QVBoxLayout(self)
         layout.addWidget(QLabel("Teks masukan:"))
         layout.addWidget(self.input_edit)
+        layout.addWidget(QLabel("Kunci kustom (opsional):"))
+        layout.addWidget(self.key_edit)
         layout.addLayout(btn_row)
         layout.addWidget(QLabel("Hasil:"))
         layout.addWidget(self.output_edit)
         layout.addWidget(self.status_label)
 
     def _keys(self) -> tuple[bytes, bytes, bytes]:
+        custom = self.key_edit.text()
+        if custom.strip():
+            return keys_from_custom(custom.encode("utf-8"))
         return self._keys_provider()
 
     def _on_encrypt(self) -> None:

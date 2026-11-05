@@ -1,7 +1,115 @@
-"""Koneksi basis data SQLCipher — placeholder, belum diimplementasikan.
+"""Koneksi & akses basis data SQLCipher.
 
 §4.6: seluruh file .db dienkripsi SQLCipher (PRAGMA key saat koneksi);
-kolom `isi` pesan penting dienkripsi AES-GCM per-rekor (is_penting=1).
+kolom sensitif (mis. face_template) dienkripsi AES-GCM oleh pemanggil.
 """
 
 from __future__ import annotations
+
+from typing import Optional
+
+from sqlcipher3 import dbapi2 as sqlite
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS users (
+    id            INTEGER PRIMARY KEY,
+    username      TEXT NOT NULL UNIQUE,
+    salt_password BLOB NOT NULL,
+    hash_password BLOB NOT NULL,
+    face_template BLOB,
+    salt_master   BLOB NOT NULL,
+    dongle_id    TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+    id         INTEGER PRIMARY KEY,
+    owner_id   INTEGER NOT NULL REFERENCES users(id),
+    judul      TEXT NOT NULL,
+    isi        BLOB,
+    is_penting BOOLEAN NOT NULL DEFAULT 0,
+    dibuat_pada TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS assets (
+    id          INTEGER PRIMARY KEY,
+    nama_aset   TEXT NOT NULL,
+    hash_aset   TEXT NOT NULL,
+    pemilik     TEXT,
+    dicatat_pada TEXT NOT NULL,
+    chain_index INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+    id      INTEGER PRIMARY KEY,
+    kegiatan TEXT NOT NULL,
+    waktu   TEXT NOT NULL,
+    user_id INTEGER REFERENCES users(id)
+);
+"""
+
+
+def _open_connection(path: str, key: bytes) -> sqlite.Connection:
+    conn = sqlite.connect(path)
+    # SQLCipher: kunci sebagai passphrase (hex) dalam kutip string.
+    conn.execute(f"PRAGMA key = '{key.hex()}'")
+    conn.executescript(SCHEMA)
+    conn.commit()
+    return conn
+
+
+class Database:
+    """Pembungkus tipis koneksi SQLCipher."""
+
+    def __init__(self, path: str, key: bytes) -> None:
+        self._conn = _open_connection(path, key)
+        self._conn.row_factory = sqlite.Row
+
+    def exists(self, sql: str, params: tuple = ()) -> bool:
+        row = self._conn.execute(sql, params).fetchone()
+        return row is not None
+
+    def fetchone(self, sql: str, params: tuple = ()) -> Optional[sqlite.Row]:
+        return self._conn.execute(sql, params).fetchone()
+
+    def fetchall(self, sql: str, params: tuple = ()) -> list:
+        return self._conn.execute(sql, params).fetchall()
+
+    def execute(self, sql: str, params: tuple = ()) -> None:
+        self._conn.execute(sql, params)
+        self._conn.commit()
+
+    def close(self) -> None:
+        self._conn.close()
+
+
+class UserStore:
+    """Operasi tabel `users`."""
+
+    def __init__(self, db: Database) -> None:
+        self._db = db
+
+    def insert_user(
+        self,
+        *,
+        username: str,
+        salt_password: bytes,
+        hash_password: bytes,
+        face_template: Optional[bytes],
+        salt_master: bytes,
+        dongle_id: str,
+    ) -> None:
+        self._db.execute(
+            """
+            INSERT INTO users (username, salt_password, hash_password, face_template,
+                               salt_master, dongle_id)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (username, salt_password, hash_password, face_template, salt_master, dongle_id),
+        )
+
+    def get_user_by_username(self, username: str) -> Optional[dict]:
+        row = self._db.fetchone("SELECT * FROM users WHERE username = ?", (username,))
+        return dict(row) if row else None
+
+    def set_face_template(self, user_id: int, face_template: bytes) -> None:
+        self._db.execute("UPDATE users SET face_template = ? WHERE id = ?", (face_template, user_id))

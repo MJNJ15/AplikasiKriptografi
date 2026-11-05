@@ -6,8 +6,12 @@ kolom sensitif (mis. face_template) dienkripsi AES-GCM oleh pemanggil.
 
 from __future__ import annotations
 
+import os
+from datetime import datetime, timezone
 from typing import Optional
 
+from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from sqlcipher3 import dbapi2 as sqlite
 
 SCHEMA = """
@@ -78,6 +82,11 @@ class Database:
         self._conn.execute(sql, params)
         self._conn.commit()
 
+    def insert(self, sql: str, params: tuple = ()) -> int:
+        cur = self._conn.execute(sql, params)
+        self._conn.commit()
+        return int(cur.lastrowid)
+
     def close(self) -> None:
         self._conn.close()
 
@@ -113,3 +122,70 @@ class UserStore:
 
     def set_face_template(self, user_id: int, face_template: bytes) -> None:
         self._db.execute("UPDATE users SET face_template = ? WHERE id = ?", (face_template, user_id))
+
+
+class MessageStore:
+    """Operasi tabel `messages`, dengan enkripsi kolom AES-GCM untuk pesan penting.
+
+    §4.6 / keputusan #4: hanya rekor `is_penting=1` yang isinya dienkripsi
+    ganda (AES-GCM per-rekor). Pesan biasa tetap terlindungi lapis SQLCipher.
+    """
+
+    NONCE_LEN = 12
+
+    def __init__(self, db: Database, column_key: bytes) -> None:
+        self._db = db
+        self._cipher = AESGCM(column_key)
+
+    @staticmethod
+    def _now_iso() -> str:
+        return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+    def add_message(
+        self,
+        *,
+        owner_id: int,
+        judul: str,
+        isi: str,
+        is_penting: bool,
+        dibuat_pada: str | None = None,
+    ) -> int:
+        if is_penting:
+            nonce = os.urandom(self.NONCE_LEN)
+            ct = self._cipher.encrypt(nonce, isi.encode("utf-8"), None)
+            payload = nonce + ct
+        else:
+            payload = isi.encode("utf-8")
+        cur = self._db.insert(
+            """
+            INSERT INTO messages (owner_id, judul, isi, is_penting, dibuat_pada)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (owner_id, judul, payload, int(is_penting), dibuat_pada or self._now_iso()),
+        )
+        return cur
+
+    def list_messages(self, owner_id: int) -> list[dict]:
+        rows = self._db.fetchall(
+            """
+            SELECT id, judul, is_penting, dibuat_pada FROM messages
+            WHERE owner_id = ? ORDER BY id DESC
+            """,
+            (owner_id,),
+        )
+        return [dict(r) for r in rows]
+
+    def get_plain(self, *, owner_id: int, message_id: int) -> str:
+        row = self._db.fetchone(
+            "SELECT isi, is_penting FROM messages WHERE id = ? AND owner_id = ?",
+            (message_id, owner_id),
+        )
+        if row is None:
+            raise KeyError("pesan tidak ditemukan")
+        payload = bytes(row["isi"]) if row["isi"] is not None else b""
+        if row["is_penting"]:
+            if len(payload) < self.NONCE_LEN + 16:
+                raise ValueError("blob pesan penting tidak valid")
+            nonce, ct = payload[: self.NONCE_LEN], payload[self.NONCE_LEN :]
+            return self._cipher.decrypt(nonce, ct, None).decode("utf-8")
+        return payload.decode("utf-8")

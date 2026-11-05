@@ -1,7 +1,7 @@
 """Dialog webcam untuk menyimpan (enroll) & verifikasi wajah.
 
-- EnrollFaceDialog: otomatis menangkap beberapa frame saat wajah terdeteksi
-  (video live), lalu menyimpan template raw ke `template_bytes`.
+- EnrollFaceDialog: video live; pengguna menekan tombol "Simpan Wajah"
+  untuk menyimpan template (beberapa frame diambil saat tombol ditekan).
 - VerifyFaceDialog: mencocokkan frame live terhadap template; cocok → accept.
 
 Keduanya memakai CameraWidget (webcam menyala + indikator status).
@@ -24,7 +24,6 @@ from ..security.biometric import FaceBiometrics
 from .camera_widget import CameraWidget
 
 NEEDED_FRAMES = 8
-ENROLL_TIMEOUT_SECONDS = 25.0
 VERIFY_TIMEOUT_SECONDS = 15.0
 
 
@@ -51,13 +50,13 @@ class _FacePopupBase(QDialog):
         self.cancel_btn = QPushButton("Batal")
         self.cancel_btn.clicked.connect(self.reject)
 
-        footer = QHBoxLayout()
-        footer.addStretch(1)
-        footer.addWidget(self.cancel_btn)
+        self._footer = QHBoxLayout()
+        self._footer.addStretch(1)
+        self._footer.addWidget(self.cancel_btn)
 
         layout = QVBoxLayout(self)
         layout.addWidget(self._camera)
-        layout.addLayout(footer)
+        layout.addLayout(self._footer)
 
         self._camera.start()
 
@@ -79,30 +78,32 @@ class EnrollFaceDialog(_FacePopupBase):
     ) -> None:
         super().__init__("Simpan Wajah", camera_index, parent, capture_factory)
         self._bio = FaceBiometrics()
-        self._collected: list = []
-        self._deadline = time.monotonic() + ENROLL_TIMEOUT_SECONDS
         self.template_bytes: Optional[bytes] = None
-        self._camera.status_label.setText("Mendeteksi wajah… arahkan wajah ke kamera")
 
-    def _on_frame(self, frame) -> None:
+        self.simpan_btn = QPushButton("Simpan Wajah")
+        self.simpan_btn.setObjectName("primaryBtn")
+        self.simpan_btn.clicked.connect(self._on_save)
+        idx = self._footer.indexOf(self.cancel_btn)
+        self._footer.insertWidget(idx, self.simpan_btn)
+
+        self._camera.status_label.setText(
+            "Arahkan wajah ke kamera, lalu tekan 'Simpan Wajah'."
+        )
+
+    def _on_save(self) -> None:
         if self.template_bytes is not None:
             return
-        if time.monotonic() > self._deadline:
-            self._fail("Waktu habis — wajah tidak cukup terdeteksi.")
+        frames = self._camera.grab_frames(NEEDED_FRAMES)
+        faces = [
+            f
+            for f in (self._bio.extract_face(fr) for fr in frames)
+            if f is not None
+        ]
+        if not faces:
+            self._camera.status_label.setText("Wajah tidak terdeteksi — coba lagi.")
             return
-        face = self._bio.extract_face(frame)
-        if face is None:
-            return
-        self._collected.append(face)
-        self._camera.status_label.setText(
-            f"Merekam wajah… {len(self._collected)}/{NEEDED_FRAMES}"
-        )
-        if len(self._collected) >= NEEDED_FRAMES:
-            self._finish_enroll()
-
-    def _finish_enroll(self) -> None:
         try:
-            self._bio.enroll(self._collected)
+            self._bio.enroll(faces)
         except ValueError as exc:
             self._fail(str(exc))
             return

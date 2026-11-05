@@ -56,11 +56,14 @@ def _force_extract(dlg):
     )
 
 
-def test_enroll_dialog_auto_capture(qapp):
+def test_enroll_dialog_manual_save(qapp):
     dlg = EnrollFaceDialog(capture_factory=lambda i: FakeCapture(_pattern(1)))
     _force_extract(dlg)
-    for _ in range(NEEDED_FRAMES):
-        dlg._on_frame(_pattern(1))
+    # Tanpa menekan tombol → belum tersimpan
+    assert dlg.result() != QDialog.DialogCode.Accepted
+    assert dlg.template_bytes is None
+    # Tekan "Simpan Wajah"
+    dlg._on_save()
     assert dlg.result() == QDialog.DialogCode.Accepted
     assert dlg.template_bytes is not None
     # template dapat dimuat ulang untuk verifikasi
@@ -69,15 +72,13 @@ def test_enroll_dialog_auto_capture(qapp):
     assert bio.is_match(_pattern(1)) is True
 
 
-def test_enroll_timeout_rejects(qapp):
-    import time as _time
-
+def test_enroll_no_face_rejected(qapp):
     dlg = EnrollFaceDialog(capture_factory=lambda i: FakeCapture(_pattern(1)))
-    _force_extract(dlg)
-    dlg._deadline = _time.monotonic() - 1
-    dlg._on_frame(_pattern(1))
+    # tanpa stub deteksi → Haar tidak mendeteksi pola sintetis
+    dlg._on_save()
     assert dlg.result() != QDialog.DialogCode.Accepted
     assert dlg.template_bytes is None
+    assert "tidak terdeteksi" in dlg._camera.status_label.text()
 
 
 def test_verify_dialog_accepts_matching(qapp):

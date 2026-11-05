@@ -84,6 +84,18 @@ class CameraWidget(QWidget):
     def latest_frame(self) -> Optional[np.ndarray]:
         return self._latest_frame
 
+    def grab_frames(self, count: int) -> list:
+        """Ambil `count` frame langsung dari kamera (fallback: frame terakhir)."""
+        frames: list = []
+        for _ in range(count):
+            if self._cap is not None and self._cap.isOpened():
+                ok, frame = self._cap.read()
+                if ok and frame is not None:
+                    frames.append(frame)
+        if not frames and self._latest_frame is not None:
+            frames.append(self._latest_frame)
+        return frames
+
     def step(self) -> None:
         if self._cap is None or not self._cap.isOpened():
             return

@@ -55,9 +55,14 @@ class CryptoPanel(QWidget):
         self.action_btn = QPushButton("Enkripsi" if is_encrypt else "Dekripsi")
         self.action_btn.clicked.connect(self._on_action)
 
+        self.clear_input_btn = QPushButton("Bersihkan Input")
+        self.clear_input_btn.setObjectName("secondaryBtn")
+        self.clear_input_btn.clicked.connect(self._on_clear_input)
+
         # Tombol menempel ke kanan
         btn_row = QHBoxLayout()
         btn_row.addStretch(1)
+        btn_row.addWidget(self.clear_input_btn)
         btn_row.addWidget(self.action_btn)
 
         key_grid = QGridLayout()
@@ -135,6 +140,11 @@ class CryptoPanel(QWidget):
             return
         self.output_edit.setPlainText(result)
         self.status_label.setText(success_msg)
+
+    def _on_clear_input(self) -> None:
+        """Bersihkan kolom masukan saja (kunci & hasil tetap)."""
+        self.input_edit.clear()
+        self.status_label.setText("Input dibersihkan.")
 
 
 class TextTab(QWidget):

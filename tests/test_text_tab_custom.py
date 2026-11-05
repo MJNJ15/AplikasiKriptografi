@@ -99,3 +99,16 @@ def test_lfsr_short_key_blocked(qapp):
     p.action_btn.click()
     assert p.output_edit.toPlainText() == ""
     assert "lfsr" in p.status_label.text().lower()
+
+
+def test_clear_input_button_only_clears_input(qapp):
+    tab = TextTab()
+    p = tab.encrypt_panel
+    _fill_keys(p)
+    p.input_edit.setPlainText("pesan asli")
+    p.output_edit.setPlainText("HASIL-LAMA")
+    p.clear_input_btn.click()
+    assert p.input_edit.toPlainText() == ""
+    assert p.output_edit.toPlainText() == "HASIL-LAMA"
+    assert p.vigenere_edit.text() == "LEMON"
+    assert "dibersihkan" in p.status_label.text().lower()

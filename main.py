@@ -29,6 +29,7 @@ from app.security.boot import (
 from app.security.dongle import DongleError, provision_dongle
 from app.ui.login_dialog import LoginDialog
 from app.ui.main_window import MainWindow
+from app.ui.theme import apply_theme
 
 
 def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
@@ -82,6 +83,7 @@ def run(argv: Optional[list[str]] = None) -> int:
         return 0
 
     app = QApplication.instance() or QApplication(sys.argv)
+    apply_theme(app)
 
     try:
         info = boot_with_dongle(args.data_dir)

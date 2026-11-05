@@ -24,6 +24,9 @@ from PySide6.QtWidgets import (
 )
 
 
+from .main_window import WINDOW_HEIGHT, WINDOW_WIDTH
+
+
 class LoginDialog(QDialog):
     def __init__(
         self,
@@ -34,6 +37,7 @@ class LoginDialog(QDialog):
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Login — Aplikasi Kriptografi")
+        self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
         self._verify = verify
         self._face_verify = face_verify
         self.username: str = ""

@@ -18,6 +18,9 @@ from .file_tab import FileTab
 from .image_tab import ImageTab
 from .text_tab import TextTab
 
+WINDOW_WIDTH = 1100
+WINDOW_HEIGHT = 720
+
 
 class MainWindow(QMainWindow):
     def __init__(
@@ -49,4 +52,4 @@ class MainWindow(QMainWindow):
         tabs.addTab(image_tab, "Gambar")
         tabs.addTab(asset_tab, "Aset")
         self.setCentralWidget(tabs)
-        self.resize(760, 560)
+        self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)

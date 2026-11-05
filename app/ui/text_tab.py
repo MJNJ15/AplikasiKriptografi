@@ -1,12 +1,13 @@
 """Tab Teks: super enkripsi (klasik → modern) — §4.4.
 
-Setiap algoritma punya kolom kunci tersendiri (wajib diisi):
-Vigenère, Caesar, LFSR (seed), DES, HMAC. Tombol aksi rata kanan.
+Dipisah menjadi dua sub-tab: "Enkripsi" dan "Dekripsi". Setiap sub-tab
+punya kolom kunci per-algoritma tersendiri (wajib diisi): Vigenère, Caesar,
+LFSR (seed), DES, HMAC. Tombol aksi rata kanan.
 """
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Literal, Optional
 
 from PySide6.QtWidgets import (
     QGridLayout,
@@ -16,6 +17,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -24,35 +26,39 @@ from ..core.keys import TextKeys, derive_des_key
 from ..core.super_encrypt import decrypt_text, encrypt_text
 
 
-class TextTab(QWidget):
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+class CryptoPanel(QWidget):
+    """Panel enkripsi ATAU dekripsi (dipakai di dalam sub-tab)."""
+
+    def __init__(self, mode: Literal["encrypt", "decrypt"], parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
+        self.mode = mode
+        is_encrypt = mode == "encrypt"
 
         self.input_edit = QPlainTextEdit()
-        self.input_edit.setPlaceholderText("Pesan teks polos…")
+        self.input_edit.setPlaceholderText(
+            "Pesan teks polos…" if is_encrypt else "Tempel ciphertext (Base64)…"
+        )
         self.output_edit = QPlainTextEdit()
         self.output_edit.setReadOnly(True)
-        self.output_edit.setPlaceholderText("Hasil (Base64) akan tampil di sini…")
+        self.output_edit.setPlaceholderText(
+            "Hasil (Base64)…" if is_encrypt else "Hasil teks polos…"
+        )
         self.status_label = QLabel("Siap.")
         self._key_error = ""
 
-        # Kolom kunci per-algoritma (wajib diisi)
         self.vigenere_edit = self._key_line("Kunci Vigenère (huruf/kata)")
         self.caesar_edit = self._key_line("Kunci Caesar (shift/kata)")
         self.lfsr_edit = self._key_line("Kunci LFSR — seed (min. 4 karakter)")
         self.des_edit = self._key_line("Kunci DES (8 karakter; selain itu di-hash)")
         self.mac_edit = self._key_line("Kunci HMAC-SHA256")
 
-        self.encrypt_btn = QPushButton("Enkripsi")
-        self.decrypt_btn = QPushButton("Dekripsi")
-        self.encrypt_btn.clicked.connect(self._on_encrypt)
-        self.decrypt_btn.clicked.connect(self._on_decrypt)
+        self.action_btn = QPushButton("Enkripsi" if is_encrypt else "Dekripsi")
+        self.action_btn.clicked.connect(self._on_action)
 
         # Tombol menempel ke kanan
         btn_row = QHBoxLayout()
         btn_row.addStretch(1)
-        btn_row.addWidget(self.encrypt_btn)
-        btn_row.addWidget(self.decrypt_btn)
+        btn_row.addWidget(self.action_btn)
 
         key_grid = QGridLayout()
         key_grid.setColumnStretch(1, 1)
@@ -68,7 +74,7 @@ class TextTab(QWidget):
         key_grid.addWidget(self.mac_edit, 4, 1)
 
         layout = QVBoxLayout(self)
-        layout.addWidget(QLabel("Teks masukan:"))
+        layout.addWidget(QLabel("Masukan:"))
         layout.addWidget(self.input_edit)
         layout.addWidget(QLabel("Kunci per algoritma (wajib):"))
         layout.addLayout(key_grid)
@@ -108,9 +114,9 @@ class TextTab(QWidget):
             mac=raw["mac"].encode("utf-8"),
         )
 
-    def _on_encrypt(self) -> None:
-        text = self.input_edit.toPlainText()
-        if not text:
+    def _on_action(self) -> None:
+        payload = self.input_edit.toPlainText()
+        if not payload:
             self.status_label.setText("Masukan kosong.")
             return
         keys = self._parse_keys()
@@ -118,26 +124,31 @@ class TextTab(QWidget):
             self.status_label.setText(self._key_error)
             return
         try:
-            blob = encrypt_text(text, keys)
+            if self.mode == "encrypt":
+                result = encrypt_text(payload, keys)
+                success_msg = "Enkripsi berhasil."
+            else:
+                result = decrypt_text(payload, keys)
+                success_msg = "Dekripsi berhasil."
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Enkripsi gagal", str(exc))
+            QMessageBox.warning(self, "Gagal", str(exc))
             return
-        self.output_edit.setPlainText(blob)
-        self.status_label.setText("Enkripsi berhasil.")
+        self.output_edit.setPlainText(result)
+        self.status_label.setText(success_msg)
 
-    def _on_decrypt(self) -> None:
-        blob = self.output_edit.toPlainText()
-        if not blob:
-            self.status_label.setText("Belum ada hasil untuk didekripsi.")
-            return
-        keys = self._parse_keys()
-        if keys is None:
-            self.status_label.setText(self._key_error)
-            return
-        try:
-            text = decrypt_text(blob, keys)
-        except Exception as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Dekripsi gagal", str(exc))
-            return
-        self.input_edit.setPlainText(text)
-        self.status_label.setText("Dekripsi berhasil.")
+
+class TextTab(QWidget):
+    """Tab utama berisi sub-tab Enkripsi & Dekripsi."""
+
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self.encrypt_panel = CryptoPanel("encrypt")
+        self.decrypt_panel = CryptoPanel("decrypt")
+
+        tabs = QTabWidget()
+        tabs.addTab(self.encrypt_panel, "Enkripsi")
+        tabs.addTab(self.decrypt_panel, "Dekripsi")
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(tabs)

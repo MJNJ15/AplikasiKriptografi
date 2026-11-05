@@ -30,22 +30,28 @@ def qapp():
     yield app
 
 
+def _fill(panel) -> None:
+    panel.vigenere_edit.setText("LEMON")
+    panel.caesar_edit.setText("C")
+    panel.lfsr_edit.setText("SEED1234")
+    panel.des_edit.setText("DESKEY8!")
+    panel.mac_edit.setText("MAC-KUNCI-12345678")
+
+
 def test_text_tab_encrypt_decrypt(qapp):
     tab = TextTab()
-    tab.vigenere_edit.setText("LEMON")
-    tab.caesar_edit.setText("C")
-    tab.lfsr_edit.setText("SEED1234")
-    tab.des_edit.setText("DESKEY8!")
-    tab.mac_edit.setText("MAC-KUNCI-12345678")
-    tab.input_edit.setPlainText("Halo dunia rahasia 123!")
-    tab.encrypt_btn.click()
-    blob = tab.output_edit.toPlainText()
+    p = tab.encrypt_panel
+    _fill(p)
+    p.input_edit.setPlainText("Halo dunia rahasia 123!")
+    p.action_btn.click()
+    blob = p.output_edit.toPlainText()
     assert blob
-    keys = tab._parse_keys()
-    assert keys is not None
-    assert decrypt_text(blob, keys) == "Halo dunia rahasia 123!"
-    tab.decrypt_btn.click()
-    assert tab.input_edit.toPlainText() == "Halo dunia rahasia 123!"
+
+    d = tab.decrypt_panel
+    _fill(d)
+    d.input_edit.setPlainText(blob)
+    d.action_btn.click()
+    assert d.output_edit.toPlainText() == "Halo dunia rahasia 123!"
 
 
 def test_db_tab_save_and_view(qapp, tmp_path):

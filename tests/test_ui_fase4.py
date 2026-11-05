@@ -35,20 +35,26 @@ def test_image_tab_embed_extract(qapp, tmp_path, monkeypatch):
     stego_path = tmp_path / "stego.png"
 
     tab = ImageTab()
-    monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *a, **k: (str(cover_path), ""))
-    tab.choose_btn.click()
-    assert tab._cover_path == cover_path
+    embed, extract = tab.embed_panel, tab.extract_panel
 
-    tab.message_edit.setPlainText("Pesan rahasia stego")
-    tab.password_edit.setText(KEY.decode())
+    # --- Sisip ---
+    monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *a, **k: (str(cover_path), ""))
+    embed.choose_btn.click()
+    assert embed._image is not None
+    assert not embed.preview_label.pixmap().isNull()
+
+    embed.message_edit.setPlainText("Pesan rahasia stego")
+    embed.password_edit.setText(KEY.decode())
     monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *a, **k: (str(stego_path), ""))
-    tab.embed_btn.click()
+    embed.action_btn.click()
     assert stego_path.exists()
 
-    tab.message_edit.clear()
+    # --- Ekstrak ---
     monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *a, **k: (str(stego_path), ""))
-    tab.extract_btn.click()
-    assert tab.message_edit.toPlainText() == "Pesan rahasia stego"
+    extract.choose_btn.click()
+    extract.password_edit.setText(KEY.decode())
+    extract.action_btn.click()
+    assert extract.message_edit.toPlainText() == "Pesan rahasia stego"
 
 
 def test_asset_tab_add_and_verify(qapp, tmp_path, monkeypatch):

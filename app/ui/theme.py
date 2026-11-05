@@ -29,7 +29,8 @@ QLabel {{
 
 /* ---------- Tab ---------- */
 QTabWidget::pane {{
-    border: none;
+    border: 1px solid #dfe3ec;
+    border-radius: 8px;
     background: transparent;
 }}
 QTabBar::tab {{
@@ -190,9 +191,10 @@ QPushButton#resetBtn {{
     background: #f0b429;
     color: #3a2c00;
     border-radius: 6px;
-    padding: 4px 14px;
-    font-size: 12px;
+    padding: 2px 10px;
+    font-size: 11px;
     font-weight: 600;
+    min-height: 22px;
 }}
 QPushButton#resetBtn:hover {{
     background: #f5c542;
@@ -301,7 +303,8 @@ QLabel {{
 }}
 
 QTabWidget::pane {{
-    border: none;
+    border: 1px solid #3a4150;
+    border-radius: 8px;
     background: transparent;
 }}
 QTabBar::tab {{
@@ -456,9 +459,10 @@ QPushButton#resetBtn {{
     background: #d9a514;
     color: #1a1400;
     border-radius: 6px;
-    padding: 4px 14px;
-    font-size: 12px;
+    padding: 2px 10px;
+    font-size: 11px;
     font-weight: 600;
+    min-height: 22px;
 }}
 QPushButton#resetBtn:hover {{
     background: #eab308;

@@ -79,6 +79,10 @@ class CryptoPanel(QWidget):
         key_grid.addWidget(QLabel("HMAC:"), 4, 0)
         key_grid.addWidget(self.mac_edit, 4, 1)
 
+        reset_row = QHBoxLayout()
+        reset_row.addStretch(1)
+        reset_row.addWidget(self.reset_btn)
+
         layout = QVBoxLayout(self)
         layout.setSpacing(10)
         layout.addWidget(QLabel("Masukan:"))
@@ -88,7 +92,7 @@ class CryptoPanel(QWidget):
         layout.addLayout(btn_row)
         layout.addWidget(QLabel("Hasil:"))
         layout.addWidget(self.output_edit)
-        layout.addWidget(self.reset_btn)
+        layout.addLayout(reset_row)
         layout.addWidget(self.status_label)
 
     @staticmethod

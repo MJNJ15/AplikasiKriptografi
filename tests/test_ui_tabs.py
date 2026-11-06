@@ -103,6 +103,7 @@ def test_file_tab_encrypt_decrypt(qapp, tmp_path, monkeypatch):
     assert dp._path == enc
     assert not dp.meta_label.isHidden()
     assert "tidak dapat dipratinjau" in dp.meta_label.text()
+    assert "SHA-256" in dp.meta_label.text()
 
     dp.action_btn.click()
     assert src.read_text(encoding="utf-8") == "PDF rahasia"

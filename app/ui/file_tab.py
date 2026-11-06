@@ -175,6 +175,10 @@ class FilePanel(QWidget):
         # Tidak dapat dipratinjau / file terenkripsi
         if ext == ENC_SUFFIX:
             self.meta_label.setText("File terenkripsi — konten tidak dapat dipratinjau.")
+            self.meta_label.setText(
+                self.meta_label.text()
+                + f"\nSHA-256: {_sha256_file(path)}"
+            )
         else:
             self.meta_label.setText("File biner — hanya metadata:")
             self.meta_label.setText(

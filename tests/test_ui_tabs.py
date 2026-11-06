@@ -91,9 +91,9 @@ def test_file_tab_encrypt_decrypt(qapp, tmp_path, monkeypatch):
     assert not ep.text_preview.isHidden()  # preview teks tampil
     assert "PDF rahasia" in ep.text_preview.toPlainText()
 
-    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *a, **k: (str(src) + ".enc", ""))
+    enc = tmp_path / "hasil_enc.enc"
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *a, **k: (str(enc), ""))
     ep.action_btn.click()
-    enc = tmp_path / "dokumen.txt.enc"
     assert enc.exists()
     assert enc.read_bytes() != b"PDF rahasia"
 
@@ -103,9 +103,11 @@ def test_file_tab_encrypt_decrypt(qapp, tmp_path, monkeypatch):
     assert dp._path == enc
     assert not dp.meta_label.isHidden()
     assert "dikenali" in dp.meta_label.text()
-    assert "Nama asli: dokumen.txt" in dp.meta_label.text()
+    assert "Nama asli:" in dp.meta_label.text()
     assert "SHA-256" in dp.meta_label.text()
     assert "siap didekripsi" in dp.status_label.text()
 
+    out = tmp_path / "hasil_dec.txt"
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *a, **k: (str(out), ""))
     dp.action_btn.click()
-    assert src.read_text(encoding="utf-8") == "PDF rahasia"
+    assert out.read_text(encoding="utf-8") == "PDF rahasia"

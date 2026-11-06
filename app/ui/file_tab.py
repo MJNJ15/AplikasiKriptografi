@@ -208,16 +208,27 @@ class FilePanel(QWidget):
         if self._path is None or not self._path.exists():
             QMessageBox.warning(self, "File", "Pilih file lebih dulu.")
             return
+
+        src = self._path
+        if self.mode == "encrypt":
+            default = str(src) + ENC_SUFFIX
+            title = "Simpan hasil enkripsi"
+        else:
+            base = src.name.removesuffix(ENC_SUFFIX) or (src.name + ".dec")
+            default = str(src.with_name(base))
+            title = "Simpan hasil dekripsi"
+
+        dst_str, _ = QFileDialog.getSaveFileName(self, title, default, "Semua file (*)")
+        if not dst_str:
+            self.status_label.setText("Penyimpanan dibatalkan.")
+            return
+        dst = Path(dst_str)
+
         try:
             if self.mode == "encrypt":
-                dst = Path(str(self._path) + ENC_SUFFIX)
-                encrypt_file(self._path, dst, self._key)
+                encrypt_file(src, dst, self._key)
                 self.status_label.setText(f"Tersimpan: {dst.name}")
             else:
-                src = self._path
-                dst = src.with_name(
-                    src.name.removesuffix(ENC_SUFFIX) or (src.name + ".dec")
-                )
                 decrypt_file(src, dst, self._key)
                 self.status_label.setText(f"Hasil dekripsi: {dst.name}")
         except Exception as exc:  # noqa: BLE001

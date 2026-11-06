@@ -91,6 +91,8 @@ class FilePanel(QWidget):
 
         self.info_label = QLabel("Belum ada file dipilih.")
         self.info_label.setWordWrap(True)
+        self.info_label.setMinimumWidth(200)
+        self.info_label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
 
         self.image_preview = QLabel("–")
         self.image_preview.setFixedSize(PREVIEW_WIDTH, PREVIEW_HEIGHT)
@@ -106,6 +108,18 @@ class FilePanel(QWidget):
 
         self.meta_label = QLabel("")
         self.meta_label.setWordWrap(True)
+        self.meta_label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+
+        # Preview (kanan) — satu baris dengan kolom nama file (kiri)
+        right_col = QVBoxLayout()
+        right_col.addWidget(self.image_preview)
+        right_col.addWidget(self.text_preview)
+        right_col.addWidget(self.meta_label)
+        right_col.addStretch(1)
+
+        content_row = QHBoxLayout()
+        content_row.addWidget(self.info_label, 0, Qt.AlignmentFlag.AlignTop)
+        content_row.addLayout(right_col, 1)
 
         self.reset_btn = QPushButton("Reset")
         self.reset_btn.setObjectName("resetBtn")
@@ -123,10 +137,7 @@ class FilePanel(QWidget):
 
         layout = QVBoxLayout(self)
         layout.addLayout(top_row)
-        layout.addWidget(self.info_label)
-        layout.addWidget(self.image_preview)
-        layout.addWidget(self.text_preview)
-        layout.addWidget(self.meta_label)
+        layout.addLayout(content_row, 1)
         layout.addLayout(row)
         layout.addWidget(self.status_label)
 

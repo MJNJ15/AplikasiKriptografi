@@ -193,3 +193,14 @@ class MessageStore:
             nonce, ct = payload[: self.NONCE_LEN], payload[self.NONCE_LEN :]
             return self._cipher.decrypt(nonce, ct, None).decode("utf-8")
         return payload.decode("utf-8")
+
+    def get_payload(self, *, owner_id: int, message_id: int) -> tuple[bytes, bool]:
+        """Kembalikan (payload mentah yang tersimpan, is_penting)."""
+        row = self._db.fetchone(
+            "SELECT isi, is_penting FROM messages WHERE id = ? AND owner_id = ?",
+            (message_id, owner_id),
+        )
+        if row is None:
+            raise KeyError("pesan tidak ditemukan")
+        payload = bytes(row["isi"]) if row["isi"] is not None else b""
+        return payload, bool(row["is_penting"])

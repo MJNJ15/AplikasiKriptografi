@@ -6,6 +6,7 @@ Menggunakan `MessageStore` (SQLCipher + AES-GCM per-rekor utk penting).
 
 from __future__ import annotations
 
+import base64
 from typing import Optional
 
 from PySide6.QtCore import Signal
@@ -104,15 +105,24 @@ class ViewMessagesPanel(QWidget):
 
         self.refresh_btn = QPushButton("Muat Ulang")
         self.view_btn = QPushButton("Lihat Isi Terpilih")
+        self.reveal_btn = QPushButton("Tampilkan Isi Asli")
+        self.reveal_btn.setObjectName("secondaryBtn")
+        self.reveal_btn.hide()
         self.status_label = QLabel("Siap.")
+
+        self._current_id: Optional[int] = None
+        self._is_penting = False
+        self._showing_plain = False
 
         self.refresh_btn.clicked.connect(self.refresh)
         self.view_btn.clicked.connect(self._on_view)
+        self.reveal_btn.clicked.connect(self._on_reveal)
 
         actions = QHBoxLayout()
         actions.addStretch(1)
         actions.addWidget(self.refresh_btn)
         actions.addWidget(self.view_btn)
+        actions.addWidget(self.reveal_btn)
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.table)
@@ -146,12 +156,56 @@ class ViewMessagesPanel(QWidget):
             self.status_label.setText("Pilih satu baris pesan lebih dulu.")
             return
         try:
-            plain = self._store.get_plain(owner_id=self._owner_id, message_id=message_id)
+            payload, penting = self._store.get_payload(
+                owner_id=self._owner_id, message_id=message_id
+            )
         except Exception as exc:  # noqa: BLE001
             QMessageBox.warning(self, "Gagal membaca pesan", str(exc))
             return
-        self.output_edit.setPlainText(plain)
-        self.status_label.setText(f"Menampilkan isi pesan #{message_id}.")
+
+        self._current_id = message_id
+        self._is_penting = penting
+        self._showing_plain = False
+
+        if penting:
+            self.output_edit.setPlainText(base64.b64encode(payload).decode("ascii"))
+            self.reveal_btn.show()
+            self.reveal_btn.setText("Tampilkan Isi Asli")
+            self.status_label.setText("Menampilkan ciphertext — pesan tersimpan sebagai AES-GCM.")
+        else:
+            try:
+                plain = self._store.get_plain(
+                    owner_id=self._owner_id, message_id=message_id
+                )
+            except Exception as exc:  # noqa: BLE001
+                QMessageBox.warning(self, "Gagal membaca pesan", str(exc))
+                return
+            self.output_edit.setPlainText(plain)
+            self.reveal_btn.hide()
+            self.status_label.setText("Menampilkan isi — pesan tidak dienkripsi tambahan (hanya SQLCipher).")
+
+    def _on_reveal(self) -> None:
+        if self._current_id is None or not self._is_penting:
+            return
+        try:
+            if self._showing_plain:
+                payload, _ = self._store.get_payload(
+                    owner_id=self._owner_id, message_id=self._current_id
+                )
+                self.output_edit.setPlainText(base64.b64encode(payload).decode("ascii"))
+                self.reveal_btn.setText("Tampilkan Isi Asli")
+                self._showing_plain = False
+                self.status_label.setText("Menampilkan ciphertext — pesan tersimpan sebagai AES-GCM.")
+            else:
+                plain = self._store.get_plain(
+                    owner_id=self._owner_id, message_id=self._current_id
+                )
+                self.output_edit.setPlainText(plain)
+                self.reveal_btn.setText("Tampilkan Ciphertext")
+                self._showing_plain = True
+                self.status_label.setText("Menampilkan hasil dekripsi teks asli.")
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.warning(self, "Gagal", str(exc))
 
 
 class DbTab(QWidget):

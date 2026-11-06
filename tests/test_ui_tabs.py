@@ -61,6 +61,7 @@ def test_db_tab_save_and_view(qapp, tmp_path):
     add_panel, view_panel = tab.add_panel, tab.view_panel
     assert view_panel.table.rowCount() == 0
 
+    # Pesan penting
     add_panel.title_edit.setText("Catatan rahasia")
     add_panel.body_edit.setPlainText("isi penting")
     add_panel.important_check.setChecked(True)
@@ -71,9 +72,35 @@ def test_db_tab_save_and_view(qapp, tmp_path):
     assert rows[0]["judul"] == "Catatan rahasia"
     assert rows[0]["is_penting"] == 1
 
+    # Tampilan default: ciphertext (bukan teks asli)
     view_panel.table.selectRow(0)
     view_panel.view_btn.click()
+    assert not view_panel.reveal_btn.isHidden()
+    assert view_panel.output_edit.toPlainText() != "isi penting"
+    assert view_panel.reveal_btn.text() == "Tampilkan Isi Asli"
+    assert "ciphertext" in view_panel.status_label.text()
+
+    # Tombol reveal → teks asli
+    view_panel.reveal_btn.click()
     assert view_panel.output_edit.toPlainText() == "isi penting"
+    assert view_panel.reveal_btn.text() == "Tampilkan Ciphertext"
+    assert "dekripsi" in view_panel.status_label.text()
+
+    # Toggle balik → ciphertext lagi
+    view_panel.reveal_btn.click()
+    assert view_panel.output_edit.toPlainText() != "isi penting"
+    assert view_panel.reveal_btn.text() == "Tampilkan Isi Asli"
+
+    # Pesan tidak penting → teks langsung, tanpa tombol reveal
+    add_panel.title_edit.setText("Catatan biasa")
+    add_panel.body_edit.setPlainText("isi biasa")
+    add_panel.important_check.setChecked(False)
+    add_panel.save_btn.click()
+    assert view_panel.table.rowCount() == 2
+    view_panel.table.selectRow(0)
+    view_panel.view_btn.click()
+    assert view_panel.reveal_btn.isHidden()
+    assert "isi biasa" in view_panel.output_edit.toPlainText()
 
 
 def test_file_tab_encrypt_decrypt(qapp, tmp_path, monkeypatch):

@@ -132,7 +132,7 @@ class FilePanel(QWidget):
 
     def _on_choose(self) -> None:
         is_decrypt = self.mode == "decrypt"
-        flt = f"Enkripsi ({ENC_SUFFIX});;Semua file (*)" if is_decrypt else "Semua file (*)"
+        flt = f"File Enkripsi (*{ENC_SUFFIX});;Semua file (*)" if is_decrypt else "Semua file (*)"
         path, _ = QFileDialog.getOpenFileName(self, "Pilih file", "", flt)
         if not path:
             return
@@ -174,7 +174,16 @@ class FilePanel(QWidget):
 
         # Tidak dapat dipratinjau / file terenkripsi
         if ext == ENC_SUFFIX:
-            self.meta_label.setText("File terenkripsi — konten tidak dapat dipratinjau.")
+            if self.mode == "decrypt":
+                base = path.name.removesuffix(ENC_SUFFIX) or path.name
+                self.meta_label.setText(
+                    "File terenkripsi dikenali — siap didekripsi."
+                    f"\nNama asli: {base}"
+                )
+                self.status_label.setText("File .enc dikenali — siap didekripsi.")
+            else:
+                self.meta_label.setText("File terenkripsi — konten tidak dapat dipratinjau.")
+                self.status_label.setText("File .enc dipilih — siap dienkripsi ulang.")
             self.meta_label.setText(
                 self.meta_label.text()
                 + f"\nSHA-256: {_sha256_file(path)}"
@@ -185,7 +194,7 @@ class FilePanel(QWidget):
                 self.meta_label.text()
                 + f"\nSHA-256: {_sha256_file(path)}"
             )
-        self.status_label.setText("Preview tidak tersedia untuk jenis file ini.")
+            self.status_label.setText("Preview tidak tersedia untuk jenis file ini.")
 
     def _on_reset(self) -> None:
         self._path = None

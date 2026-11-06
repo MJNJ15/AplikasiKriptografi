@@ -199,6 +199,17 @@ QPushButton#resetBtn {{
 QPushButton#resetBtn:hover {{
     background: #f5c542;
 }}
+QPushButton#revealBtn {{
+    background: #2e9e4f;
+    color: #ffffff;
+    border-radius: 6px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 600;
+}}
+QPushButton#revealBtn:hover {{
+    background: #26b15a;
+}}
 QPushButton#smallBtn {{
     background: #eef1f8;
     color: #344054;
@@ -489,6 +500,17 @@ QPushButton#resetBtn {{
 }}
 QPushButton#resetBtn:hover {{
     background: #eab308;
+}}
+QPushButton#revealBtn {{
+    background: #1f8a44;
+    color: #ffffff;
+    border-radius: 6px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 600;
+}}
+QPushButton#revealBtn:hover {{
+    background: #22a34f;
 }}
 QPushButton#smallBtn {{
     background: #353c4a;

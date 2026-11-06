@@ -106,7 +106,7 @@ class ViewMessagesPanel(QWidget):
         self.refresh_btn = QPushButton("Muat Ulang")
         self.view_btn = QPushButton("Lihat Isi Terpilih")
         self.reveal_btn = QPushButton("Tampilkan Isi Asli")
-        self.reveal_btn.setObjectName("secondaryBtn")
+        self.reveal_btn.setObjectName("revealBtn")
         self.reveal_btn.hide()
         self.status_label = QLabel("Siap.")
 
@@ -125,6 +125,7 @@ class ViewMessagesPanel(QWidget):
         actions.addWidget(self.reveal_btn)
 
         layout = QVBoxLayout(self)
+        layout.addWidget(QLabel("Daftar Pesan:"))
         layout.addWidget(self.table)
         layout.addLayout(actions)
         layout.addWidget(QLabel("Isi Pesan:"))

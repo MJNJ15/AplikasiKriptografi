@@ -58,21 +58,22 @@ def test_db_tab_save_and_view(qapp, tmp_path):
     db = Database(str(tmp_path / "ui.db"), DB_KEY)
     store = MessageStore(db, COLUMN_KEY)
     tab = DbTab(store, owner_id=1)
-    assert tab.table.rowCount() == 0
+    add_panel, view_panel = tab.add_panel, tab.view_panel
+    assert view_panel.table.rowCount() == 0
 
-    tab.title_edit.setText("Catatan rahasia")
-    tab.body_edit.setPlainText("isi penting")
-    tab.important_check.setChecked(True)
-    tab.save_btn.click()
+    add_panel.title_edit.setText("Catatan rahasia")
+    add_panel.body_edit.setPlainText("isi penting")
+    add_panel.important_check.setChecked(True)
+    add_panel.save_btn.click()
 
-    assert tab.table.rowCount() == 1
+    assert view_panel.table.rowCount() == 1
     rows = store.list_messages(1)
     assert rows[0]["judul"] == "Catatan rahasia"
     assert rows[0]["is_penting"] == 1
 
-    tab.table.selectRow(0)
-    tab.view_btn.click()
-    assert tab.body_edit.toPlainText() == "isi penting"
+    view_panel.table.selectRow(0)
+    view_panel.view_btn.click()
+    assert view_panel.output_edit.toPlainText() == "isi penting"
 
 
 def test_file_tab_encrypt_decrypt(qapp, tmp_path, monkeypatch):

@@ -31,11 +31,13 @@ AplikasiKriptografi/
 │   ├── security/
 │   │   ├── dongle.py      # deteksi, verifikasi & provisioning dongle
 │   │   ├── boot.py        # orkestrasi boot (DB dikunci kunci dongle)
-│   │   └── auth.py        # login kata sandi + sesi token (lockout)
+│   │   ├── auth.py        # login kata sandi + sesi token (lockout)
+│   │   ├── biometric.py   # biometrik wajah DNN (YUNet + SFace + CLAHE)
+│   │   └── face_login.py  # template wajah terenkripsi (AES-GCM)
 │   ├── db/
 │   │   ├── database.py    # SQLCipher + UserStore + MessageStore
 │   │   └── schema.sql     # skema basis data
-│   ├── ui/                # PySide6 (main_window, login_dialog, 5 tab)
+│   ├── ui/                # PySide6 (main_window, login_dialog, face_dialogs, camera_widget, 5 tab)
 │   └── utils/paths.py
 ├── tests/                 # pytest (semua suite)
 └── requirements.txt

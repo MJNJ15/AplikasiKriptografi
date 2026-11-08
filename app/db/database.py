@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
     username      TEXT NOT NULL UNIQUE,
     salt_password BLOB NOT NULL,
     hash_password BLOB NOT NULL,
+    face_template BLOB,
     salt_master   BLOB NOT NULL,
     dongle_id    TEXT NOT NULL
 );
@@ -102,16 +103,17 @@ class UserStore:
         username: str,
         salt_password: bytes,
         hash_password: bytes,
+        face_template: Optional[bytes] = None,
         salt_master: bytes,
         dongle_id: str,
     ) -> None:
         self._db.execute(
             """
-            INSERT INTO users (username, salt_password, hash_password,
+            INSERT INTO users (username, salt_password, hash_password, face_template,
                                salt_master, dongle_id)
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (username, salt_password, hash_password, salt_master, dongle_id),
+            (username, salt_password, hash_password, face_template, salt_master, dongle_id),
         )
 
     def get_user_by_username(self, username: str) -> Optional[dict]:
@@ -121,6 +123,9 @@ class UserStore:
     def list_users(self) -> list[dict]:
         rows = self._db.fetchall("SELECT id, username FROM users ORDER BY id")
         return [dict(r) for r in rows]
+
+    def set_face_template(self, user_id: int, face_template: bytes) -> None:
+        self._db.execute("UPDATE users SET face_template = ? WHERE id = ?", (face_template, user_id))
 
 
 class MessageStore:

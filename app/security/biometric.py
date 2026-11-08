@@ -60,9 +60,22 @@ class FaceBiometrics:
         """Kembalikan daftar (x, y, w, h) wajah yang terdeteksi."""
         if frame.ndim == 2:
             frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+        # YUNet membutuhkan size input sesuai frame aktual.
+        h, w = frame.shape[:2]
+        self._detector.setInputSize((w, h))
         result = self._detector.detect(frame)
-        faces = result[0] if isinstance(result, tuple) else result
-        if faces is None or len(faces) == 0:
+        # OpenCV 5: hasil tuple (jumlah, faces); versi lain: faces langsung.
+        if isinstance(result, tuple) and len(result) >= 2:
+            faces = result[1]
+        else:
+            faces = result
+        if faces is None:
+            return []
+        try:
+            count = len(faces)
+        except TypeError:
+            return []
+        if count == 0:
             return []
         boxes = []
         for face in faces:

@@ -54,6 +54,15 @@ def test_draw_detection_boxes():
     assert out[10, 10].sum() > 0
 
 
+def test_detect_faces_accepts_any_frame_size():
+    """Regresi: YUNet harus menerima ukuran frame non-320x320."""
+    bio = FaceBiometrics()
+    for size in ((640, 480), (320, 240), (1280, 720)):
+        frame = np.random.default_rng(3).integers(0, 256, (*size, 3), dtype=np.uint8)
+        boxes = bio.detect_faces(frame)
+        assert isinstance(boxes, list)
+
+
 def test_normalize_lighting_shape():
     bio = FaceBiometrics()
     crop = np.random.default_rng(0).integers(0, 256, (112, 112, 3), dtype=np.uint8)

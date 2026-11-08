@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS users (
     username      TEXT NOT NULL UNIQUE,
     salt_password BLOB NOT NULL,           -- Argon2id salt
     hash_password BLOB NOT NULL,           -- Argon2id hash
-    face_template BLOB,                    -- template wajah terenkripsi AES-GCM
     salt_master   BLOB NOT NULL,           -- untuk turunan master key
     dongle_id    TEXT NOT NULL             -- mengikat akun ke dongle
 );

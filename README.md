@@ -31,9 +31,7 @@ AplikasiKriptografi/
 │   ├── security/
 │   │   ├── dongle.py      # deteksi, verifikasi & provisioning dongle
 │   │   ├── boot.py        # orkestrasi boot (DB dikunci kunci dongle)
-│   │   ├── auth.py        # login kata sandi + sesi token (lockout)
-│   │   ├── biometric.py   # biometrik wajah LBPH + Haar
-│   │   └── face_login.py  # login wajah (template terenkripsi)
+│   │   └── auth.py        # login kata sandi + sesi token (lockout)
 │   ├── db/
 │   │   ├── database.py    # SQLCipher + UserStore + MessageStore
 │   │   └── schema.sql     # skema basis data

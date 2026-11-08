@@ -66,7 +66,6 @@ class AuthManager:
             username=username,
             salt_password=salt_password,
             hash_password=hash_password,
-            face_template=None,
             salt_master=salt_master,
             dongle_id=dongle_id,
         )

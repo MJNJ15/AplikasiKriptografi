@@ -33,9 +33,8 @@ def qapp():
 def _fill(panel) -> None:
     panel.vigenere_edit.setText("LEMON")
     panel.caesar_edit.setText("C")
-    panel.lfsr_edit.setText("SEED1234")
     panel.des_edit.setText("DESKEY8!")
-    panel.mac_edit.setText("MAC-KUNCI-12345678")
+    panel.aes_edit.setText("AES-RIJNDAEL-2025")
 
 
 def test_text_tab_encrypt_decrypt(qapp):

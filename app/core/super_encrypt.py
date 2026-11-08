@@ -1,30 +1,26 @@
 """Super enkripsi teks (klasik → modern) — §4.4.
 
 Alur:
-    Vigenère(kunci) → Caesar(kunci) → XOR-LFSR(seed kunci)
-    → DES/DEA-CBC(kunci) → HMAC-SHA256(kunci)
+    Vigenère(kunci) → Caesar(kunci) → DES/DEA-CBC(kunci)
+    → AES Rijndael-CBC(kunci)
 
 Setiap algoritma memakai kunci masukannya sendiri (TextKeys). Hasil akhir
-(Base64) = iv_des(8) ‖ ciphertext ‖ hmac(32). Deterministik: kunci sama →
-ciphertext sama (seed LFSR berasal dari kunci).
+(Base64) = iv_des(8) ‖ iv_aes(16) ‖ ciphertext. IV acak per-operasi;
+tanpa tag HMAC — integritas bukan fokus (kebenaran kunci terlihat dari
+keterbacaan hasil dekripsi).
 """
 
 from __future__ import annotations
 
 import base64
-import hmac
 import os
 
 from . import classic, modern
-from .keys import TextKeys, derive_des_key
+from .keys import TextKeys, derive_aes_key, derive_des_key
 
 DES_IV_LEN = 8
-HMAC_LEN = 32
-HEADER_LEN = DES_IV_LEN
-
-
-def _sha256(key: bytes, data: bytes) -> bytes:
-    return hmac.new(key, data, digestmod="sha256").digest()
+AES_IV_LEN = 16
+HEADER_LEN = DES_IV_LEN + AES_IV_LEN
 
 
 def encrypt_text(plaintext: str, keys: TextKeys) -> str:
@@ -34,35 +30,29 @@ def encrypt_text(plaintext: str, keys: TextKeys) -> str:
     layer2 = classic.caesar(layer1, keys.caesar, encrypt=True)
     data = layer2.encode("utf-8")
 
-    # Lapis 2 — modern (LFSR XOR → DES-CBC → HMAC)
-    stream = modern.lfsr_keystream(keys.lfsr, len(data))
-    xored = modern.xor_bytes(data, stream)
+    # Lapis 2 — modern (DES-CBC → AES-CBC)
+    iv_des = os.urandom(DES_IV_LEN)
+    ct_des = modern.des_cbc_encrypt(derive_des_key(keys.des), iv_des, data)
 
-    iv = os.urandom(DES_IV_LEN)
-    ct = modern.des_cbc_encrypt(derive_des_key(keys.des), iv, xored)
+    iv_aes = os.urandom(AES_IV_LEN)
+    ct_aes = modern.aes_cbc_encrypt(derive_aes_key(keys.aes), iv_aes, ct_des)
 
-    tag = _sha256(keys.mac, iv + ct)
-    bundle = iv + ct + tag
+    bundle = iv_des + iv_aes + ct_aes
     return base64.b64encode(bundle).decode("ascii")
 
 
 def decrypt_text(b64: str, keys: TextKeys) -> str:
-    """Super enkripsi invers: Base64 → str. Gagal bila MAC tidak cocok."""
+    """Super enkripsi invers: Base64 → str."""
     bundle = base64.b64decode(b64.encode("ascii"))
-    if len(bundle) < HEADER_LEN + HMAC_LEN + modern._BLOCK_SIZE:
+    if len(bundle) < HEADER_LEN + 16:
         raise ValueError("blob hasil enkripsi tidak valid (terlalu pendek)")
 
-    iv = bundle[:HEADER_LEN]
-    ct = bundle[HEADER_LEN:-HMAC_LEN]
-    tag = bundle[-HMAC_LEN:]
+    iv_des = bundle[:DES_IV_LEN]
+    iv_aes = bundle[DES_IV_LEN:HEADER_LEN]
+    ct_aes = bundle[HEADER_LEN:]
 
-    expected = _sha256(keys.mac, iv + ct)
-    if not hmac.compare_digest(tag, expected):
-        raise ValueError("tag HMAC tidak cocok — kunci salah atau data diubah")
-
-    xored = modern.des_cbc_decrypt(derive_des_key(keys.des), iv, ct)
-    stream = modern.lfsr_keystream(keys.lfsr, len(xored))
-    data = modern.xor_bytes(xored, stream)
+    ct_des = modern.aes_cbc_decrypt(derive_aes_key(keys.aes), iv_aes, ct_aes)
+    data = modern.des_cbc_decrypt(derive_des_key(keys.des), iv_des, ct_des)
 
     layer2 = data.decode("utf-8")
     layer1 = classic.caesar(layer2, keys.caesar, encrypt=False)

@@ -2,7 +2,7 @@
 
 Dipisah menjadi dua sub-tab: "Enkripsi" dan "Dekripsi". Setiap sub-tab
 punya kolom kunci per-algoritma tersendiri (wajib diisi): Vigenère, Caesar,
-LFSR (seed), DES, HMAC. Tombol aksi rata kanan.
+DES, AES Rijndael. Tombol aksi rata kanan.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..core.keys import TextKeys, derive_des_key
+from ..core.keys import TextKeys, derive_aes_key, derive_des_key
 from ..core.super_encrypt import decrypt_text, encrypt_text
 
 
@@ -52,9 +52,8 @@ class CryptoPanel(QWidget):
 
         self.vigenere_edit = self._key_line("contoh: LEMON")
         self.caesar_edit = self._key_line("contoh: C")
-        self.lfsr_edit = self._key_line("contoh: SEED1234")
         self.des_edit = self._key_line("contoh: RAHAS8!")
-        self.mac_edit = self._key_line("contoh: kunci-hmac-2025")
+        self.aes_edit = self._key_line("contoh: kunci-rinjdael2025")
 
         self.action_btn = QPushButton("Enkripsi" if is_encrypt else "Dekripsi")
         self.action_btn.clicked.connect(self._on_action)
@@ -72,12 +71,10 @@ class CryptoPanel(QWidget):
         key_grid.addWidget(self.vigenere_edit, 0, 1)
         key_grid.addWidget(QLabel("Caesar:"), 1, 0)
         key_grid.addWidget(self.caesar_edit, 1, 1)
-        key_grid.addWidget(QLabel("LFSR:"), 2, 0)
-        key_grid.addWidget(self.lfsr_edit, 2, 1)
-        key_grid.addWidget(QLabel("DES:"), 3, 0)
-        key_grid.addWidget(self.des_edit, 3, 1)
-        key_grid.addWidget(QLabel("HMAC:"), 4, 0)
-        key_grid.addWidget(self.mac_edit, 4, 1)
+        key_grid.addWidget(QLabel("DES:"), 2, 0)
+        key_grid.addWidget(self.des_edit, 2, 1)
+        key_grid.addWidget(QLabel("AES (Rijndael):"), 3, 0)
+        key_grid.addWidget(self.aes_edit, 3, 1)
 
         reset_row = QHBoxLayout()
         reset_row.addStretch(1)
@@ -103,27 +100,22 @@ class CryptoPanel(QWidget):
         return edit
 
     def _parse_keys(self) -> Optional[TextKeys]:
-        """Baca 5 kolom kunci; None bila ada yang kosong/tidak valid."""
+        """Baca 4 kolom kunci; None bila ada yang kosong/tidak valid."""
         raw = {
             "vigenere": self.vigenere_edit.text(),
             "caesar": self.caesar_edit.text(),
-            "lfsr": self.lfsr_edit.text(),
             "des": self.des_edit.text(),
-            "mac": self.mac_edit.text(),
+            "aes": self.aes_edit.text(),
         }
         if any(not v.strip() for v in raw.values()):
             self._key_error = "Semua kolom kunci wajib diisi."
-            return None
-        if len(raw["lfsr"].strip()) < 4:
-            self._key_error = "Kunci LFSR minimal 4 karakter."
             return None
         self._key_error = ""
         return TextKeys(
             vigenere=raw["vigenere"].encode("utf-8"),
             caesar=raw["caesar"].encode("utf-8"),
-            lfsr=raw["lfsr"].encode("utf-8"),
             des=derive_des_key(raw["des"].encode("utf-8")),
-            mac=raw["mac"].encode("utf-8"),
+            aes=derive_aes_key(raw["aes"].encode("utf-8")),
         )
 
     def _on_action(self) -> None:

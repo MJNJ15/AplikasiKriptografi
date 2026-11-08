@@ -23,7 +23,7 @@ AplikasiKriptografi/
 │   ├── core/              # inti kriptografi (murni, tanpa GUI)
 │   │   ├── keys.py        # KDF: Argon2id + HKDF, sub-kunci
 │   │   ├── classic.py     # Vigenère, Caesar
-│   │   ├── modern.py      # LFSR, DES/DEA, HMAC
+│   │   ├── modern.py      # DES/DEA-CBC, AES (Rijndael)-CBC
 │   │   ├── super_encrypt.py  # super enkripsi teks (klasik → modern)
 │   │   ├── file_crypto.py # ChaCha20-Poly1305
 │   │   ├── stego.py       # steganografi LSB + permutasi
@@ -77,9 +77,9 @@ AplikasiKriptografi/
 
 | Kriteria | Fitur | Algoritma |
 |----------|-------|-----------|
-| 1 | Dongle + biometrik | Flashdisk `.dongle.key` + SHA-256; wajah LBPH/Haar |
+| 1 | Dongle + biometrik | Flashdisk `.dongle.key` + SHA-256; wajah DNN (YUNet + SFace) |
 | 2 | Login berkriptografi | Argon2id, sesi token, lockout |
-| 3 | Super enkripsi teks | Vigenère → Caesar → LFSR → DES/DEA-CBC → HMAC |
+| 3 | Super enkripsi teks | Vigenère → Caesar → DES/DEA-CBC → AES (Rijndael)-CBC |
 | 4 | Enkripsi file | ChaCha20-Poly1305 (berbeda dari teks) |
 | 5 | Basis data terenkripsi | SQLCipher + AES-GCM per-rekor (pesan penting) |
 | 6 | Steganografi gambar | LSB + permutasi ber-seed, wajib PNG |

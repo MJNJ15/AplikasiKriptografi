@@ -28,8 +28,7 @@ DEFAULT_KEY_LEN = 32
 # Nama sub-kunci → `info` HKDF (lihat tabel §4.7).
 SUBKEY_INFO: dict[str, bytes] = {
     "des": b"text-des",
-    "lfsr": b"text-lfsr",
-    "mac": b"text-mac",
+    "aes": b"text-aes",
     "classic": b"text-classic",
     "chacha": b"file-chacha",
     "db": b"db-sqlcipher",
@@ -94,16 +93,14 @@ class TextKeys:
     Setiap algoritma memakai kunci masukannya sendiri:
       - vigenere: kunci kata Vigenère
       - caesar:   kunci shift Caesar
-      - lfsr:     seed LFSR (keystream), minimal 4 byte
       - des:      kunci DES (8 byte efektif — dinormalisasi via derive_des_key)
-      - mac:      kunci HMAC-SHA256
+      - aes:      kunci AES Rijndael (16/24/32 byte — normalisasi via derive_aes_key)
     """
 
     vigenere: bytes
     caesar: bytes
-    lfsr: bytes
     des: bytes
-    mac: bytes
+    aes: bytes
 
 
 def derive_des_key(raw: bytes) -> bytes:
@@ -113,17 +110,24 @@ def derive_des_key(raw: bytes) -> bytes:
     return hashlib.sha256(raw).digest()[:8]
 
 
+def derive_aes_key(raw: bytes) -> bytes:
+    """Normalisasi kunci AES → 16/24/32 byte; selain itu SHA-256 (32 byte)."""
+    if len(raw) in (16, 24, 32):
+        return raw
+    return hashlib.sha256(raw).digest()
+
+
 def make_text_keys(app_key: bytes) -> tuple[bytes, bytes, bytes]:
-    """Sub-kunci super enkripsi teks: (classic, des, mac)."""
+    """Sub-kunci super enkripsi teks: (classic, des, aes)."""
     return (
         derive_subkey(app_key, "classic", length=16),
         derive_subkey(app_key, "des", length=8),
-        derive_subkey(app_key, "mac", length=32),
+        derive_subkey(app_key, "aes", length=32),
     )
 
 
 def keys_from_custom(custom_key: bytes) -> tuple[bytes, bytes, bytes]:
-    """Turunkan sub-kunci teks (classic/des/mac) dari kunci kustom pengguna.
+    """Turunkan sub-kunci teks (classic/des/aes) dari kunci kustom pengguna.
 
     Dipakai TextTab ketika kolom "Kunci kustom" diisi; deterministik terhadap
     kunci yang sama, dan berbeda dari kunci sesi.
@@ -138,5 +142,5 @@ def keys_from_custom(custom_key: bytes) -> tuple[bytes, bytes, bytes]:
     return (
         _hkdf(b"text-classic", 16),
         _hkdf(b"text-des", 8),
-        _hkdf(b"text-mac", 32),
+        _hkdf(b"text-aes", 32),
     )

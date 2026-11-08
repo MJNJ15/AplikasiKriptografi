@@ -41,10 +41,10 @@ def test_mix_with_dongle_deterministic():
 def test_subkeys_distinct():
     app_key = derive_master_key(PASSWORD, generate_salt())
     des = derive_subkey(app_key, "des", length=8)
-    mac = derive_subkey(app_key, "mac")
+    aes = derive_subkey(app_key, "aes")
     classic = derive_subkey(app_key, "classic", length=16)
-    assert len(des) == 8 and len(mac) == 32 and len(classic) == 16
-    assert len({des, mac, classic}) == 3
+    assert len(des) == 8 and len(aes) == 32 and len(classic) == 16
+    assert len({des, aes, classic}) == 3
 
 
 def test_unknown_subkey_rejected():

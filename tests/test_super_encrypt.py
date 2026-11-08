@@ -10,16 +10,14 @@ from app.core.super_encrypt import decrypt_text, encrypt_text
 KEYS = TextKeys(
     vigenere=b"LEMON",
     caesar=b"C",
-    lfsr=b"SEED1234",
     des=b"DESKEY8!",
-    mac=b"MAC-KUNCI-12345678",
+    aes=b"AES-RIJNDAEL-2025",
 )
 OTHER_KEYS = TextKeys(
     vigenere=b"ORANGE",
     caesar=b"X",
-    lfsr=b"OTHERSEED",
     des=b"RAHAS8!",
-    mac=b"MAC-BERBEDA-9999",
+    aes=b"AES-LAIN-2026-BERBEDA",
 )
 
 
@@ -43,14 +41,33 @@ def test_different_keys_give_different_ciphertext():
     assert a != b
 
 
-def test_wrong_key_fails():
+def test_wrong_key_fails_or_yields_garbage():
+    """Tanpa HMAC: kunci salah tidak dijamin memicu exception — hasil
+    harus berbeda dari plaintext asli (keterbacaan = penanda kebenaran)."""
     blob = encrypt_text("rahasia", KEYS)
-    with pytest.raises(ValueError):
-        decrypt_text(blob, OTHER_KEYS)
+    try:
+        out = decrypt_text(blob, OTHER_KEYS)
+    except Exception:
+        return  # admissible: gagal di dekripsi/UTF-8/padding
+    assert out != "rahasia"
 
 
-def test_tampered_blob_fails():
+def test_tampered_blob_detected_or_yields_garbage():
     blob = encrypt_text("jangan diubah", KEYS)
     tampered = blob[:-4] + ("AAAA" if blob[-4:] != "AAAA" else "BBBB")
-    with pytest.raises(ValueError):
-        decrypt_text(tampered, KEYS)
+    try:
+        out = decrypt_text(tampered, KEYS)
+    except Exception:
+        return  # admissible: gagal di dekripsi/UTF-8/padding
+    assert out != "jangan diubah"
+
+
+def test_short_plaintext_min_length():
+    blob = encrypt_text("A", KEYS)
+    assert decrypt_text(blob, KEYS) == "A"
+
+
+def test_unicode_plaintext():
+    text = "Pesan dengan aksara: café, 你好, 🔐"
+    blob = encrypt_text(text, KEYS)
+    assert decrypt_text(blob, KEYS) == text

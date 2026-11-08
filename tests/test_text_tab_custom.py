@@ -15,9 +15,8 @@ from app.ui.text_tab import TextTab
 def _fill_keys(panel) -> None:
     panel.vigenere_edit.setText("LEMON")
     panel.caesar_edit.setText("C")
-    panel.lfsr_edit.setText("SEED1234")
     panel.des_edit.setText("DESKEY8!")
-    panel.mac_edit.setText("MAC-KUNCI-12345678")
+    panel.aes_edit.setText("AES-RIJNDAEL-2025")
 
 
 @pytest.fixture(scope="module")
@@ -36,9 +35,9 @@ def test_two_subtabs_exist(qapp):
     assert tab.decrypt_panel.mode == "decrypt"
 
 
-def test_five_key_columns_exist(qapp):
+def test_four_key_columns_exist(qapp):
     tab = TextTab()
-    for attr in ("vigenere_edit", "caesar_edit", "lfsr_edit", "des_edit", "mac_edit"):
+    for attr in ("vigenere_edit", "caesar_edit", "des_edit", "aes_edit"):
         assert hasattr(tab.encrypt_panel, attr), attr
         assert hasattr(tab.decrypt_panel, attr), attr
 
@@ -68,7 +67,7 @@ def test_changing_one_key_changes_ciphertext(qapp):
 
     b = TextTab()
     _fill_keys(b.encrypt_panel)
-    b.encrypt_panel.mac_edit.setText("MAC-YANG-LAIN-1111")
+    b.encrypt_panel.aes_edit.setText("AES-YANG-LAIN-2026-BERBEDA")
     b.encrypt_panel.input_edit.setPlainText("pesan yang sama")
     b.encrypt_panel.action_btn.click()
     blob_b = b.encrypt_panel.output_edit.toPlainText()
@@ -88,17 +87,6 @@ def test_missing_any_key_blocked(qapp):
     p.action_btn.click()
     assert p.output_edit.toPlainText() == ""
     assert "wajib" in p.status_label.text().lower()
-
-
-def test_lfsr_short_key_blocked(qapp):
-    tab = TextTab()
-    p = tab.encrypt_panel
-    _fill_keys(p)
-    p.lfsr_edit.setText("abc")
-    p.input_edit.setPlainText("pesan")
-    p.action_btn.click()
-    assert p.output_edit.toPlainText() == ""
-    assert "lfsr" in p.status_label.text().lower()
 
 
 def test_clear_input_button_only_clears_input(qapp):

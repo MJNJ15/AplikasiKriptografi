@@ -62,7 +62,7 @@ def test_asset_tab_add_and_verify(qapp, tmp_path, monkeypatch):
 
     tab = AssetTab(difficulty=3)
     tab.name_edit.setText("Laptop")
-    tab.hash_edit.setText("abc123")
+    tab.id_edit.setText("abc123")
     tab.owner_edit.setText("Budi")
     tab.add_btn.click()
     assert tab.table.rowCount() == 2  # genesis + 1

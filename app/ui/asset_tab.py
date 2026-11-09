@@ -33,7 +33,7 @@ class AssetTab(QWidget):
         self.blockchain = Blockchain(difficulty=difficulty)
 
         self.name_edit = self._line_edit("Nama aset")
-        self.hash_edit = self._line_edit("Hash aset (mis. SHA-256)")
+        self.id_edit = self._line_edit("ID Aset")
         self.owner_edit = self._line_edit("Pemilik")
 
         self.add_btn = QPushButton("Tambah Aset")
@@ -60,8 +60,11 @@ class AssetTab(QWidget):
         actions.addStretch(1)
 
         layout = QVBoxLayout(self)
+        layout.addWidget(QLabel("Nama aset:"))
         layout.addWidget(self.name_edit)
-        layout.addWidget(self.hash_edit)
+        layout.addWidget(QLabel("ID Aset:"))
+        layout.addWidget(self.id_edit)
+        layout.addWidget(QLabel("Pemilik:"))
         layout.addWidget(self.owner_edit)
         layout.addLayout(actions)
         layout.addWidget(self.table)
@@ -84,14 +87,14 @@ class AssetTab(QWidget):
 
     def _on_add(self) -> None:
         nama = self.name_edit.text().strip()
-        hash_aset = self.hash_edit.text().strip()
+        id_aset = self.id_edit.text().strip()
         pemilik = self.owner_edit.text().strip()
-        if not nama or not hash_aset:
-            self.status_label.setText("Nama dan hash aset wajib diisi.")
+        if not nama or not id_aset:
+            self.status_label.setText("Nama dan ID aset wajib diisi.")
             return
-        block = self.blockchain.add_block([{"nama": nama, "hash": hash_aset, "pemilik": pemilik}])
+        block = self.blockchain.add_block([{"nama": nama, "id": id_aset, "pemilik": pemilik}])
         self.name_edit.clear()
-        self.hash_edit.clear()
+        self.id_edit.clear()
         self.owner_edit.clear()
         self.refresh()
         self.status_label.setText(f"Aset dicatat di blok #{block.index}.")

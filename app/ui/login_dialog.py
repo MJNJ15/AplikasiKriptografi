@@ -59,7 +59,9 @@ class LoginDialog(QDialog):
         subtitle = QLabel("Masuk untuk membuka aplikasi")
         subtitle.setObjectName("subtitleLabel")
 
-        self.username_edit = QLineEdit(initial_username)
+        # Username sengaja selalu kosong saat login (tidak memakai
+        # initial_username) — parameter dipertahankan untuk kompatibilitas API.
+        self.username_edit = QLineEdit()
         self.username_edit.setObjectName("inputField")
         self.username_edit.setPlaceholderText("contoh: budi")
         self.password_edit = QLineEdit()

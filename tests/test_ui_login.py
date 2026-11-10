@@ -40,21 +40,36 @@ def test_login_failure_does_not_accept(qapp, monkeypatch):
     assert "salah" in dlg.status_label.text()
 
 
-def test_face_button_hidden_when_no_callback(qapp):
-    dlg = LoginDialog(verify=lambda u, p: (True, ""))
-    assert dlg.face_btn.isHidden()
-
-
-def test_face_button_visible_and_flow(qapp, monkeypatch):
+def test_login_with_face_callback_requires_face(qapp, monkeypatch):
     from PySide6.QtWidgets import QMessageBox
 
     monkeypatch.setattr(QMessageBox, "warning", lambda *a, **k: None)
     dlg = LoginDialog(
         verify=lambda u, p: (True, ""),
-        face_verify=lambda u: (True, ""),
-        initial_username="budi",
+        face_verify=lambda u: (False, "verifikasi wajah dibatalkan/gagal"),
     )
-    assert not dlg.face_btn.isHidden()
     dlg.username_edit.setText("budi")
-    dlg.face_btn.click()
+    dlg.password_edit.setText("pw")
+    dlg.login_btn.click()
+    assert dlg.result() != LoginDialog.DialogCode.Accepted
+    assert "wajah" in dlg.status_label.text().lower()
+
+
+def test_login_single_flow_with_face_success(qapp):
+    dlg = LoginDialog(
+        verify=lambda u, p: (True, ""),
+        face_verify=lambda u: (True, ""),
+    )
+    dlg.username_edit.setText("budi")
+    dlg.password_edit.setText("pw")
+    dlg.login_btn.click()
+    assert dlg.result() == LoginDialog.DialogCode.Accepted
+    assert dlg.username == "budi"
+
+
+def test_login_without_face_callback_skips_face(qapp):
+    dlg = LoginDialog(verify=lambda u, p: (True, ""))
+    dlg.username_edit.setText("budi")
+    dlg.password_edit.setText("pw")
+    dlg.login_btn.click()
     assert dlg.result() == LoginDialog.DialogCode.Accepted

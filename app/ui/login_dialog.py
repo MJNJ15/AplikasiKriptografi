@@ -1,10 +1,12 @@
-"""Dialog login: kata sandi + opsi biometrik wajah.
+"""Dialog login tunggal: username + kata sandi + wajah (dua/ tiga faktor).
 
 Dialog tidak melakukan verifikasi sendiri — menerima callback:
-  - `verify(username, password) -> (ok, pesan)`  (kata sandi)
-  - `face_verify(username) -> (ok, pesan)`        (wajah)
-Bila verifikasi sukses, dialog `accept()`; hasil tersimpan di atribut
-`username` dan `session` (diisi callback).
+  - `verify(username, password) -> (ok, pesan)`   (kata sandi)
+  - `face_verify(username) -> (ok, pesan)`        (wajah; optional)
+Bila `face_verify` diberikan, setelah kata sandi cocok verifikasi wajah
+dijalankan otomatis dalam alur login yang sama (tombol login tunggal).
+Bila semua lolos, dialog `accept()`; hasil tersimpan di atribut `username`
+dan `session` (diisi callback).
 
 Tampilan: card terpusat dengan gaya tema (lihat theme.py).
 """
@@ -76,15 +78,11 @@ class LoginDialog(QDialog):
 
         self.login_btn = QPushButton("Login")
         self.login_btn.setObjectName("primaryBtn")
-        self.face_btn = QPushButton("Login Wajah")
-        self.face_btn.setObjectName("secondaryBtn")
-        self.face_btn.setVisible(face_verify is not None)
 
         self.status_label = QLabel("Silakan masuk.")
         self.status_label.setObjectName("statusLabel")
 
         self.login_btn.clicked.connect(self._on_login)
-        self.face_btn.clicked.connect(self._on_face)
         self.password_edit.returnPressed.connect(self._on_login)
 
         card_layout = QVBoxLayout(card)
@@ -100,7 +98,6 @@ class LoginDialog(QDialog):
         card_layout.addWidget(self.password_edit)
         card_layout.addSpacing(18)
         card_layout.addWidget(self.login_btn)
-        card_layout.addWidget(self.face_btn)
         card_layout.addSpacing(6)
         card_layout.addWidget(self.status_label, 0, Qt.AlignmentFlag.AlignHCenter)
 
@@ -121,24 +118,15 @@ class LoginDialog(QDialog):
             self.status_label.setText("Username dan kata sandi wajib diisi.")
             return
         ok, msg = self._verify(username, password)
-        if ok:
-            self.username = username
-            self.accept()
-        else:
+        if not ok:
             self.status_label.setText(msg)
             QMessageBox.warning(self, "Login", msg)
-
-    def _on_face(self) -> None:
-        if self._face_verify is None:
             return
-        username = self.username_edit.text().strip()
-        if not username:
-            self.status_label.setText("Isi username dulu.")
-            return
-        ok, msg = self._face_verify(username)
-        if ok:
-            self.username = username
-            self.accept()
-        else:
-            self.status_label.setText(msg)
-            QMessageBox.warning(self, "Login Wajah", msg)
+        if self._face_verify is not None:
+            ok, msg = self._face_verify(username)
+            if not ok:
+                self.status_label.setText(msg)
+                QMessageBox.warning(self, "Login", msg)
+                return
+        self.username = username
+        self.accept()

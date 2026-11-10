@@ -116,20 +116,35 @@ def run(argv: Optional[list[str]] = None) -> int:
         holder["session"] = session
         return True, ""
 
-    # Kriteria #2 & #3: pop-up webcam preview + kotak + persentase kemiripan
+    # Kriteria #1–3: wajah WAJIB pada satu alur login (username+password+wajah).
+    # Opsi A: kalau akun belum punya template → wajib enrol sekarang.
     def face_verify(username: str) -> tuple[bool, str]:
+        user = store.get_user_by_username(username)
+        if not user:
+            holder["session"] = None
+            return False, "username tidak ditemukan"
+        if not user.get("face_template"):
+            capture_dlg = CaptureFaceDialog()
+            if (
+                capture_dlg.exec() != CaptureFaceDialog.DialogCode.Accepted
+                or not capture_dlg.template_bytes
+            ):
+                holder["session"] = None
+                return False, "akun belum punya template wajah — pendaftaran wajah dibatalkan"
+            face_login.store_face_template(store, user["id"], db_key, capture_dlg.template_bytes)
+            return True, ""
         try:
-            template_raw = face_login.load_face_template(store, username, db_key)
-        except ValueError as exc:
-            return False, str(exc)
+            template_raw = face_login.decrypt_template(db_key, bytes(user["face_template"]))
+        except Exception:
+            holder["session"] = None
+            return False, "template wajah rusak/tidak valid"
         verify_dlg = VerifyFaceDialog(template_raw)
         if verify_dlg.exec() != VerifyFaceDialog.DialogCode.Accepted:
+            holder["session"] = None
             return False, "verifikasi wajah dibatalkan/gagal"
-        # Wajah cocok → tetap butuh kata sandi untuk membangun sesi (dua faktor).
-        dlg = holder["dlg"]
-        return verify(username, dlg.password_edit.text())
+        return True, ""
 
-    dlg = LoginDialog(verify=verify, face_verify=face_verify, initial_username=usernames[0])
+    dlg = LoginDialog(verify=verify, face_verify=face_verify)
     holder["dlg"] = dlg
 
     if dlg.exec() != LoginDialog.DialogCode.Accepted or holder["session"] is None:

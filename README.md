@@ -1,7 +1,6 @@
 # Aplikasi Kriptografi — Projek Akhir Mata Kuliah Kriptografi
 
-Aplikasi desktop kriptografi (PySide6) sesuai rancangan di
-`../Rancangan-Projek-Akhir-Kriptografi.md`. Memenuhi 7 kriteria tugas:
+Aplikasi desktop kriptografi (PySide6) dengan 7 kriteria :
 login biometrik + dongle, login berkriptografi, super enkripsi teks, enkripsi
 file berbeda dari teks, pesan penting terenkripsi di basis data, steganografi
 gambar, dan blockchain sederhana.

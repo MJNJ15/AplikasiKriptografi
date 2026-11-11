@@ -176,6 +176,24 @@ QPushButton#secondaryBtn:hover {{
     color: #98a2b3;
     font-size: 12px;
 }}
+#logoutPanel {{
+    background: #eceef5;
+    border: 1px solid #dfe3ec;
+    border-radius: 8px;
+    padding: 4px 10px;
+}}
+QPushButton#logoutBtn {{
+    background: #eef1f8;
+    color: #344054;
+    border-radius: 6px;
+    padding: 2px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    min-height: 22px;
+}}
+QPushButton#logoutBtn:hover {{
+    background: #dfe4f2;
+}}
 QPushButton#themeToggle {{
     background: #eceef5;
     color: #344054;
@@ -477,6 +495,24 @@ QPushButton#secondaryBtn:hover {{
 #statusLabel {{
     color: #8a94a8;
     font-size: 12px;
+}}
+#logoutPanel {{
+    background: #20252f;
+    border: 1px solid #3a4150;
+    border-radius: 8px;
+    padding: 4px 10px;
+}}
+QPushButton#logoutBtn {{
+    background: #353c4a;
+    color: #cdd4e3;
+    border-radius: 6px;
+    padding: 2px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    min-height: 22px;
+}}
+QPushButton#logoutBtn:hover {{
+    background: #404859;
 }}
 QPushButton#themeToggle {{
     background: #353c4a;

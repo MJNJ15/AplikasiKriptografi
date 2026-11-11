@@ -9,7 +9,15 @@ from __future__ import annotations
 from typing import Optional
 
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QMainWindow, QPushButton, QTabWidget, QWidget
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QPushButton,
+    QTabWidget,
+    QWidget,
+)
 
 from ..core.keys import derive_subkey
 from ..db.database import Database, MessageStore, UserStore
@@ -57,9 +65,24 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(tabs)
         self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
 
+        # Panel akun: nama pengguna + tombol Logout.
+        username = next(
+            (u["username"] for u in store.list_users() if u["id"] == user_id),
+            f"user-{user_id}",
+        )
+        panel = QFrame()
+        panel.setObjectName("logoutPanel")
+        panel_layout = QHBoxLayout(panel)
+        panel_layout.setContentsMargins(10, 4, 6, 4)
+        panel_layout.setSpacing(10)
+        user_label = QLabel(f"👤 {username}")
+        user_label.setObjectName("fieldLabel")
         logout_btn = QPushButton("Logout")
-        logout_btn.setObjectName("secondaryBtn")
+        logout_btn.setObjectName("logoutBtn")
         logout_btn.setToolTip("Keluar dari akun dan kembali ke layar login")
         logout_btn.clicked.connect(self.logout_requested)
-        self.statusBar().addPermanentWidget(logout_btn)
+        panel_layout.addWidget(user_label)
+        panel_layout.addWidget(logout_btn)
+
+        self.statusBar().addPermanentWidget(panel)
         self.statusBar().addPermanentWidget(make_theme_toggle_button())

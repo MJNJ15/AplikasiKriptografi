@@ -9,7 +9,7 @@ from __future__ import annotations
 import base64
 from typing import Optional
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QHBoxLayout,
@@ -27,6 +27,16 @@ from PySide6.QtWidgets import (
 )
 
 from ..db.database import MessageStore
+from .widgets import StatusLabel
+
+
+def _set_error(widget, flag: bool) -> None:
+    if bool(widget.property("error")) == flag:
+        return
+    widget.setProperty("error", flag)
+    style = widget.style()
+    style.unpolish(widget)
+    style.polish(widget)
 
 
 class AddMessagePanel(QWidget):
@@ -43,9 +53,12 @@ class AddMessagePanel(QWidget):
         self.title_edit.setPlaceholderText("contoh: Catatan rahasia…")
         self.body_edit = QPlainTextEdit()
         self.body_edit.setPlaceholderText("Isi pesan…")
+        self.title_edit.textChanged.connect(lambda: _set_error(self.title_edit, False))
+        self.body_edit.textChanged.connect(lambda: _set_error(self.body_edit, False))
         self.important_check = QCheckBox("Pesan penting (enkripsi tambahan)")
         self.save_btn = QPushButton("Simpan Pesan")
-        self.status_label = QLabel("Siap.")
+        self.save_btn.setObjectName("accentBtn")
+        self.status_label = StatusLabel("Siap.")
 
         self.save_btn.clicked.connect(self._on_save)
 
@@ -65,8 +78,10 @@ class AddMessagePanel(QWidget):
     def _on_save(self) -> None:
         judul = self.title_edit.text().strip()
         isi = self.body_edit.toPlainText()
+        _set_error(self.title_edit, not judul)
+        _set_error(self.body_edit, not isi)
         if not judul or not isi:
-            self.status_label.setText("Judul dan isi wajib diisi.")
+            self.status_label.error("Judul dan isi wajib diisi.")
             return
         try:
             self._store.add_message(
@@ -77,11 +92,12 @@ class AddMessagePanel(QWidget):
             )
         except Exception as exc:  # noqa: BLE001
             QMessageBox.warning(self, "Gagal menyimpan", str(exc))
+            self.status_label.error("Gagal menyimpan pesan.")
             return
         self.title_edit.clear()
         self.body_edit.clear()
         self.important_check.setChecked(False)
-        self.status_label.setText("Pesan tersimpan.")
+        self.status_label.success("Pesan tersimpan.")
         self.saved.emit()
 
 
@@ -103,12 +119,17 @@ class ViewMessagesPanel(QWidget):
         self.output_edit.setReadOnly(True)
         self.output_edit.setPlaceholderText("Isi pesan yang dipilih akan tampil di sini…")
 
+        self.empty_hint = QLabel("Belum ada pesan tersimpan — gunakan tab “Tambah Pesan”.")
+        self.empty_hint.setObjectName("emptyHint")
+        self.empty_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.empty_hint.hide()
+
         self.refresh_btn = QPushButton("Muat Ulang")
         self.view_btn = QPushButton("Lihat Isi Terpilih")
         self.reveal_btn = QPushButton("Tampilkan Isi Asli")
         self.reveal_btn.setObjectName("revealBtn")
         self.reveal_btn.hide()
-        self.status_label = QLabel("Siap.")
+        self.status_label = StatusLabel("Siap.")
 
         self._current_id: Optional[int] = None
         self._is_penting = False
@@ -126,6 +147,7 @@ class ViewMessagesPanel(QWidget):
 
         layout = QVBoxLayout(self)
         layout.addWidget(QLabel("Daftar Pesan:"))
+        layout.addWidget(self.empty_hint)
         layout.addWidget(self.table)
         layout.addLayout(actions)
         layout.addWidget(QLabel("Isi Pesan:"))
@@ -142,7 +164,8 @@ class ViewMessagesPanel(QWidget):
             self.table.setItem(i, 1, QTableWidgetItem(row["judul"]))
             self.table.setItem(i, 2, QTableWidgetItem("Ya" if row["is_penting"] else "Tidak"))
             self.table.setItem(i, 3, QTableWidgetItem(row["dibuat_pada"]))
-        self.status_label.setText(f"{len(rows)} pesan dimuat.")
+        self.empty_hint.setVisible(len(rows) == 0)
+        self.status_label.info(f"{len(rows)} pesan dimuat.")
 
     def _selected_id(self) -> Optional[int]:
         row = self.table.currentRow()
@@ -154,7 +177,7 @@ class ViewMessagesPanel(QWidget):
     def _on_view(self) -> None:
         message_id = self._selected_id()
         if message_id is None:
-            self.status_label.setText("Pilih satu baris pesan lebih dulu.")
+            self.status_label.info("Pilih satu baris pesan lebih dulu.")
             return
         try:
             payload, penting = self._store.get_payload(
@@ -162,6 +185,7 @@ class ViewMessagesPanel(QWidget):
             )
         except Exception as exc:  # noqa: BLE001
             QMessageBox.warning(self, "Gagal membaca pesan", str(exc))
+            self.status_label.error("Gagal membaca pesan.")
             return
 
         self._current_id = message_id
@@ -172,7 +196,7 @@ class ViewMessagesPanel(QWidget):
             self.output_edit.setPlainText(base64.b64encode(payload).decode("ascii"))
             self.reveal_btn.show()
             self.reveal_btn.setText("Tampilkan Isi Asli")
-            self.status_label.setText("Menampilkan ciphertext — pesan tersimpan sebagai AES-GCM.")
+            self.status_label.info("Menampilkan ciphertext — pesan tersimpan sebagai AES-GCM.")
         else:
             try:
                 plain = self._store.get_plain(
@@ -180,10 +204,11 @@ class ViewMessagesPanel(QWidget):
                 )
             except Exception as exc:  # noqa: BLE001
                 QMessageBox.warning(self, "Gagal membaca pesan", str(exc))
+                self.status_label.error("Gagal membaca pesan.")
                 return
             self.output_edit.setPlainText(plain)
             self.reveal_btn.hide()
-            self.status_label.setText("Menampilkan isi — pesan tidak dienkripsi tambahan (hanya SQLCipher).")
+            self.status_label.info("Menampilkan isi — pesan tidak dienkripsi tambahan (hanya SQLCipher).")
 
     def _on_reveal(self) -> None:
         if self._current_id is None or not self._is_penting:
@@ -196,7 +221,7 @@ class ViewMessagesPanel(QWidget):
                 self.output_edit.setPlainText(base64.b64encode(payload).decode("ascii"))
                 self.reveal_btn.setText("Tampilkan Isi Asli")
                 self._showing_plain = False
-                self.status_label.setText("Menampilkan ciphertext — pesan tersimpan sebagai AES-GCM.")
+                self.status_label.info("Menampilkan ciphertext — pesan tersimpan sebagai AES-GCM.")
             else:
                 plain = self._store.get_plain(
                     owner_id=self._owner_id, message_id=self._current_id
@@ -204,9 +229,10 @@ class ViewMessagesPanel(QWidget):
                 self.output_edit.setPlainText(plain)
                 self.reveal_btn.setText("Tampilkan Ciphertext")
                 self._showing_plain = True
-                self.status_label.setText("Menampilkan hasil dekripsi teks asli.")
+                self.status_label.info("Menampilkan hasil dekripsi teks asli.")
         except Exception as exc:  # noqa: BLE001
             QMessageBox.warning(self, "Gagal", str(exc))
+            self.status_label.error("Gagal menampilkan isi pesan.")
 
 
 class DbTab(QWidget):

@@ -17,6 +17,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (
     QFileDialog,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QMessageBox,
@@ -28,6 +29,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..core.file_crypto import decrypt_file, encrypt_file
+from .widgets import StatusLabel
 
 ENC_SUFFIX = ".enc"
 PREVIEW_WIDTH = 360
@@ -80,9 +82,9 @@ class FilePanel(QWidget):
         self._key = chacha_key
         self._path: Optional[Path] = None
 
-        # Tombol pilih file — kiri atas
         self.choose_btn = QPushButton("Pilih File…")
         self.choose_btn.setObjectName("chooseBtn")
+        self.choose_btn.setToolTip("Pilih file untuk diproses")
         self.choose_btn.clicked.connect(self._on_choose)
 
         top_row = QHBoxLayout()
@@ -98,7 +100,7 @@ class FilePanel(QWidget):
         self.image_preview.setFixedSize(PREVIEW_WIDTH, PREVIEW_HEIGHT)
         self.image_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.image_preview.setStyleSheet(
-            "background:#1a1e27; color:#8a94a8; border-radius:8px;"
+            "background:#171d26; color:#9aa4b8; border-radius:8px;"
         )
         self.image_preview.hide()
 
@@ -110,26 +112,34 @@ class FilePanel(QWidget):
         self.meta_label.setWordWrap(True)
         self.meta_label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
 
-        # Preview (kanan) — satu baris dengan kolom nama file (kiri)
-        right_col = QVBoxLayout()
-        right_col.addWidget(self.image_preview)
-        right_col.addWidget(self.text_preview)
-        right_col.addWidget(self.meta_label)
-        right_col.addStretch(1)
+        preview_card = QFrame()
+        preview_card.setObjectName("panelCard")
+        card_layout = QVBoxLayout(preview_card)
+        card_layout.setContentsMargins(14, 12, 14, 12)
+        card_layout.setSpacing(10)
+        card_layout.addWidget(self.info_label)
+        card_layout.addWidget(self.image_preview)
+        card_layout.addWidget(self.text_preview)
+        card_layout.addWidget(self.meta_label)
+        card_layout.addStretch(1)
 
         content_row = QHBoxLayout()
-        content_row.addWidget(self.info_label, 0, Qt.AlignmentFlag.AlignTop)
-        content_row.addLayout(right_col, 1)
+        content_row.addWidget(preview_card, 1)
 
         self.reset_btn = QPushButton("Reset")
         self.reset_btn.setObjectName("resetBtn")
         self.reset_btn.clicked.connect(self._on_reset)
 
         self.action_btn = QPushButton("Enkripsi File" if mode == "encrypt" else "Dekripsi File")
+        self.action_btn.setObjectName("accentBtn")
+        self.action_btn.setToolTip(
+            "Enkripsi file (ChaCha20-Poly1305)"
+            if mode == "encrypt"
+            else "Dekripsi file hasil enkripsi"
+        )
         self.action_btn.clicked.connect(self._on_action)
-        self.status_label = QLabel("Siap.")
+        self.status_label = StatusLabel("Siap.")
 
-        # Aksi rata kanan; reset di samping kirinya
         row = QHBoxLayout()
         row.addStretch(1)
         row.addWidget(self.reset_btn)
@@ -175,15 +185,14 @@ class FilePanel(QWidget):
                     )
                 )
                 self.image_preview.show()
-                self.status_label.setText("Preview gambar ditampilkan.")
+                self.status_label.success("Preview gambar ditampilkan.")
                 return
         elif ext in TEXT_EXTS:
             self.text_preview.setPlainText(_text_preview(path))
             self.text_preview.show()
-            self.status_label.setText("Preview teks ditampilkan.")
+            self.status_label.success("Preview teks ditampilkan.")
             return
 
-        # Tidak dapat dipratinjau / file terenkripsi
         if ext == ENC_SUFFIX:
             if self.mode == "decrypt":
                 base = path.name.removesuffix(ENC_SUFFIX) or path.name
@@ -191,10 +200,10 @@ class FilePanel(QWidget):
                     "File terenkripsi dikenali — siap didekripsi."
                     f"\nNama asli: {base}"
                 )
-                self.status_label.setText("File .enc dikenali — siap didekripsi.")
+                self.status_label.success("File .enc dikenali — siap didekripsi.")
             else:
                 self.meta_label.setText("File terenkripsi — konten tidak dapat dipratinjau.")
-                self.status_label.setText("File .enc dipilih — siap dienkripsi ulang.")
+                self.status_label.info("File .enc dipilih — siap dienkripsi ulang.")
             self.meta_label.setText(
                 self.meta_label.text()
                 + f"\nSHA-256: {_sha256_file(path)}"
@@ -205,7 +214,7 @@ class FilePanel(QWidget):
                 self.meta_label.text()
                 + f"\nSHA-256: {_sha256_file(path)}"
             )
-            self.status_label.setText("Preview tidak tersedia untuk jenis file ini.")
+            self.status_label.info("Preview tidak tersedia untuk jenis file ini.")
 
     def _on_reset(self) -> None:
         self._path = None
@@ -213,7 +222,7 @@ class FilePanel(QWidget):
         self.image_preview.hide()
         self.text_preview.hide()
         self.meta_label.setText("")
-        self.status_label.setText("Semua input dibersihkan.")
+        self.status_label.info("Semua input dibersihkan.")
 
     def _on_action(self) -> None:
         if self._path is None or not self._path.exists():
@@ -231,19 +240,20 @@ class FilePanel(QWidget):
 
         dst_str, _ = QFileDialog.getSaveFileName(self, title, default, "Semua file (*)")
         if not dst_str:
-            self.status_label.setText("Penyimpanan dibatalkan.")
+            self.status_label.info("Penyimpanan dibatalkan.")
             return
         dst = Path(dst_str)
 
         try:
             if self.mode == "encrypt":
                 encrypt_file(src, dst, self._key)
-                self.status_label.setText(f"Tersimpan: {dst.name}")
+                self.status_label.success(f"Tersimpan: {dst.name}")
             else:
                 decrypt_file(src, dst, self._key)
-                self.status_label.setText(f"Hasil dekripsi: {dst.name}")
+                self.status_label.success(f"Hasil dekripsi: {dst.name}")
         except Exception as exc:  # noqa: BLE001
             QMessageBox.warning(self, "Gagal", str(exc))
+            self.status_label.error("Operasi gagal.")
 
 
 class FileTab(QWidget):

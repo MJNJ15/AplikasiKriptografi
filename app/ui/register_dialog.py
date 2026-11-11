@@ -10,9 +10,11 @@ from __future__ import annotations
 from typing import Optional
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QDialog,
     QFrame,
+    QGraphicsDropShadowEffect,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -21,6 +23,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from .animations import fade_in
+
 CARD_WIDTH = 460
 
 
@@ -28,6 +32,7 @@ class RegisterDialog(QDialog):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Buat Akun Baru — Aplikasi Kriptografi")
+        self.setObjectName("registerDialog")
         self.setFixedWidth(CARD_WIDTH)
 
         self.username: str = ""
@@ -90,10 +95,20 @@ class RegisterDialog(QDialog):
         card_layout.addSpacing(6)
         card_layout.addWidget(self.status_label, 0, Qt.AlignmentFlag.AlignHCenter)
 
+        shadow = QGraphicsDropShadowEffect(card)
+        shadow.setBlurRadius(48)
+        shadow.setOffset(0, 12)
+        shadow.setColor(QColor(9, 12, 26, 90))
+        card.setGraphicsEffect(shadow)
+
         outer = QVBoxLayout(self)
         outer.addStretch(1)
         outer.addWidget(card, 0, Qt.AlignmentFlag.AlignHCenter)
         outer.addStretch(1)
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        fade_in(self)
 
     def _on_register(self) -> None:
         username = self.username_edit.text().strip()

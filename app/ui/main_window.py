@@ -1,14 +1,15 @@
 """Jendela utama aplikasi (PySide6) — tab fitur.
 
 Menerima sesi login (app_key) + komponen basis data. Dipakai setelah boot
-dongle & login sukses (fase boot/UI akhir).
+dongle & login sukses (fase boot/UI akhir). Header bar di atas tab berisi
+brand, chip pengguna, tombol Logout, dan toggle tema.
 """
 
 from __future__ import annotations
 
 from typing import Optional
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import QSize, Signal
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -16,14 +17,17 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QPushButton,
     QTabWidget,
+    QVBoxLayout,
     QWidget,
 )
 
 from ..core.keys import derive_subkey
 from ..db.database import Database, MessageStore, UserStore
+from .animations import fade_in, fade_reveal
 from .asset_tab import AssetTab
 from .db_tab import DbTab
 from .file_tab import FileTab
+from .icons import load_pixmap
 from .image_tab import ImageTab
 from .text_tab import TextTab
 from .theme import make_theme_toggle_button
@@ -57,32 +61,82 @@ class MainWindow(QMainWindow):
         asset_tab = AssetTab()
 
         tabs = QTabWidget()
-        tabs.addTab(text_tab, "Teks")
-        tabs.addTab(file_tab, "File")
-        tabs.addTab(db_tab, "Basis Data")
-        tabs.addTab(image_tab, "Gambar")
-        tabs.addTab(asset_tab, "Aset")
-        self.setCentralWidget(tabs)
-        self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
+        tabs.setIconSize(QSize(18, 18))
+        tabs.addTab(text_tab, load_pixmap("text", "#5B6B7A", 18), "Teks")
+        tabs.addTab(file_tab, load_pixmap("file", "#5B6B7A", 18), "File")
+        tabs.addTab(db_tab, load_pixmap("db", "#5B6B7A", 18), "Basis Data")
+        tabs.addTab(image_tab, load_pixmap("image", "#5B6B7A", 18), "Gambar")
+        tabs.addTab(asset_tab, load_pixmap("asset", "#5B6B7A", 18), "Aset")
+        tabs.currentChanged.connect(self._on_tab_changed)
+        self._tabs = tabs
 
-        # Panel akun: nama pengguna + tombol Logout.
+        header = self._build_header(store, user_id)
+
+        central = QWidget()
+        central_layout = QVBoxLayout(central)
+        central_layout.setContentsMargins(0, 0, 0, 0)
+        central_layout.setSpacing(0)
+        central_layout.addWidget(header)
+        central_layout.addWidget(tabs, 1)
+        self.setCentralWidget(central)
+        self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
+        self.statusBar().hide()
+
+    def _build_header(self, store: UserStore, user_id: int) -> QFrame:
         username = next(
             (u["username"] for u in store.list_users() if u["id"] == user_id),
             f"user-{user_id}",
         )
-        panel = QFrame()
-        panel.setObjectName("logoutPanel")
-        panel_layout = QHBoxLayout(panel)
-        panel_layout.setContentsMargins(10, 4, 6, 4)
-        panel_layout.setSpacing(10)
-        user_label = QLabel(f"👤 {username}")
-        user_label.setObjectName("fieldLabel")
+
+        header = QFrame()
+        header.setObjectName("appHeader")
+        header_layout = QHBoxLayout(header)
+        header_layout.setContentsMargins(16, 8, 12, 8)
+        header_layout.setSpacing(10)
+
+        brand_icon = QLabel()
+        brand_icon.setPixmap(load_pixmap("shield", "#FFFFFF", 22))
+        brand_title = QLabel("Aplikasi Kriptografi")
+        brand_title.setObjectName("brandTitle")
+        brand_subtitle = QLabel("Enkripsi  •  Biometrik  •  Dongle")
+        brand_subtitle.setObjectName("brandSubtitle")
+        brand_col = QVBoxLayout()
+        brand_col.setContentsMargins(0, 0, 0, 0)
+        brand_col.setSpacing(0)
+        brand_col.addWidget(brand_title)
+        brand_col.addWidget(brand_subtitle)
+
+        header_layout.addWidget(brand_icon)
+        header_layout.addLayout(brand_col)
+        header_layout.addStretch(1)
+
+        chip = QFrame()
+        chip.setObjectName("userChip")
+        chip_layout = QHBoxLayout(chip)
+        chip_layout.setContentsMargins(6, 4, 10, 4)
+        chip_layout.setSpacing(6)
+        user_icon = QLabel()
+        user_icon.setPixmap(load_pixmap("user", "#FFFFFF", 16))
+        user_label = QLabel(username)
+        user_label.setStyleSheet("font-weight: 600;")
+        chip_layout.addWidget(user_icon)
+        chip_layout.addWidget(user_label)
+
         logout_btn = QPushButton("Logout")
         logout_btn.setObjectName("logoutBtn")
         logout_btn.setToolTip("Keluar dari akun dan kembali ke layar login")
         logout_btn.clicked.connect(self.logout_requested)
-        panel_layout.addWidget(user_label)
-        panel_layout.addWidget(logout_btn)
 
-        self.statusBar().addPermanentWidget(panel)
-        self.statusBar().addPermanentWidget(make_theme_toggle_button())
+        header_layout.addWidget(chip)
+        header_layout.addWidget(logout_btn)
+        header_layout.addWidget(make_theme_toggle_button())
+        return header
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        fade_in(self)
+
+    def _on_tab_changed(self, index: int) -> None:
+        page = self._tabs.widget(index)
+        if page is not None and self.isVisible():
+            fade_reveal(page)

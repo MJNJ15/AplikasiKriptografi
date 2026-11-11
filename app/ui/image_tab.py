@@ -16,6 +16,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (
     QFileDialog,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -28,6 +29,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..core.stego import embed_message, extract_message
+from .widgets import StatusLabel
 
 PNG_FILTER = "PNG (*.png)"
 PREVIEW_WIDTH = 360
@@ -45,21 +47,20 @@ class ImagePanel(QWidget):
         self._image_path: Optional[Path] = None
         self._image: Optional[object] = None
 
-        # Tombol pilih gambar — biru seperti aksi, agak lebih besar
         self.choose_btn = QPushButton("Pilih Gambar…")
         self.choose_btn.setObjectName("chooseBtn")
+        self.choose_btn.setToolTip("Pilih gambar PNG (lossless) berisi pesan")
         self.choose_btn.clicked.connect(self._on_choose)
 
         top_row = QHBoxLayout()
         top_row.addWidget(self.choose_btn)
         top_row.addStretch(1)
 
-        # Preview gambar yang dipilih
         self.preview_label = QLabel("Belum ada gambar dipilih.")
         self.preview_label.setFixedSize(PREVIEW_WIDTH, PREVIEW_HEIGHT)
         self.preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.preview_label.setStyleSheet(
-            "background:#1a1e27; color:#8a94a8; border-radius:8px;"
+            "background:#171d26; color:#9aa4b8; border-radius:8px;"
         )
 
         self.message_edit = QPlainTextEdit()
@@ -69,29 +70,35 @@ class ImagePanel(QWidget):
         if not is_embed:
             self.message_edit.setReadOnly(True)
 
-        # Preview (kiri) + input pesan (kanan) dalam satu baris
+        preview_card = QFrame()
+        preview_card.setObjectName("panelCard")
+        card_layout = QVBoxLayout(preview_card)
+        card_layout.setContentsMargins(14, 12, 14, 12)
+        card_layout.setSpacing(10)
+        card_layout.addWidget(self.preview_label)
+        card_layout.addWidget(self.message_edit, 1)
+
         content_row = QHBoxLayout()
-        content_row.addWidget(self.preview_label)
-        content_row.addWidget(self.message_edit, 1)
+        content_row.addWidget(preview_card, 1)
 
         self.password_edit = QLineEdit()
         self.password_edit.setPlaceholderText("Kata sandi (kunci permutasi)")
         self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
 
         self.action_btn = QPushButton("Sisip Pesan" if is_embed else "Ekstrak Pesan")
+        self.action_btn.setObjectName("accentBtn")
         self.action_btn.clicked.connect(self._on_action)
 
         self.reset_btn = QPushButton("Reset")
         self.reset_btn.setObjectName("resetBtn")
         self.reset_btn.clicked.connect(self._on_reset)
 
-        # Tombol aksi rata kanan; reset di samping kirinya
         row = QHBoxLayout()
         row.addStretch(1)
         row.addWidget(self.reset_btn)
         row.addWidget(self.action_btn)
 
-        self.status_label = QLabel("Siap.")
+        self.status_label = StatusLabel("Siap.")
 
         layout = QVBoxLayout(self)
         layout.addLayout(top_row)
@@ -129,7 +136,7 @@ class ImagePanel(QWidget):
         self._image_path = Path(path)
         self._image = img
         self._show_preview()
-        self.status_label.setText(f"Gambar: {self._image_path.name}")
+        self.status_label.info(f"Gambar: {self._image_path.name}")
 
     def _on_reset(self) -> None:
         """Reset penuh: bersihkan pesan, kata sandi, dan gambar yang dipilih."""
@@ -139,14 +146,14 @@ class ImagePanel(QWidget):
         self._image_path = None
         self.preview_label.setPixmap(QPixmap())
         self.preview_label.setText("Belum ada gambar dipilih.")
-        self.status_label.setText("Semua input dibersihkan.")
+        self.status_label.info("Semua input dibersihkan.")
 
     def _on_action(self) -> None:
         if self._image is None or self._image_path is None:
             QMessageBox.warning(self, "Gambar", "Pilih gambar lebih dulu.")
             return
         if not self.password_edit.text():
-            self.status_label.setText("Kata sandi wajib diisi.")
+            self.status_label.error("Kata sandi wajib diisi.")
             return
         try:
             if self.mode == "embed":
@@ -164,15 +171,17 @@ class ImagePanel(QWidget):
                 if not dst:
                     return
                 ok = cv2.imwrite(dst, stego)
-                self.status_label.setText(
-                    f"Tersimpan: {Path(dst).name}" if ok else "Gagal menyimpan gambar."
-                )
+                if ok:
+                    self.status_label.success(f"Tersimpan: {Path(dst).name}")
+                else:
+                    self.status_label.error("Gagal menyimpan gambar.")
             else:
                 message = extract_message(self._image, self._key_bytes())
                 self.message_edit.setPlainText(message.decode("utf-8"))
-                self.status_label.setText("Ekstraksi berhasil.")
+                self.status_label.success("Ekstraksi berhasil.")
         except Exception as exc:  # noqa: BLE001
             QMessageBox.warning(self, "Gagal", str(exc))
+            self.status_label.error("Operasi gagal.")
 
 
 class ImageTab(QWidget):

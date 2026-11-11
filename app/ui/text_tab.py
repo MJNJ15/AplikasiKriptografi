@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Literal, Optional
 
 from PySide6.QtWidgets import (
+    QFrame,
     QGridLayout,
     QHBoxLayout,
     QLabel,
@@ -24,6 +25,7 @@ from PySide6.QtWidgets import (
 
 from ..core.keys import TextKeys, derive_aes_key, derive_des_key
 from ..core.super_encrypt import decrypt_text, encrypt_text
+from .widgets import StatusLabel
 
 
 class CryptoPanel(QWidget):
@@ -43,7 +45,7 @@ class CryptoPanel(QWidget):
         self.output_edit.setPlaceholderText(
             "Hasil (Base64)…" if is_encrypt else "Hasil teks polos…"
         )
-        self.status_label = QLabel("Siap.")
+        self.status_label = StatusLabel("Siap.")
         self._key_error = ""
 
         self.reset_btn = QPushButton("Reset")
@@ -56,9 +58,9 @@ class CryptoPanel(QWidget):
         self.aes_edit = self._key_line("contoh: kunci-rinjdael2025")
 
         self.action_btn = QPushButton("Enkripsi" if is_encrypt else "Dekripsi")
+        self.action_btn.setObjectName("accentBtn")
         self.action_btn.clicked.connect(self._on_action)
 
-        # Tombol menempel ke kanan
         btn_row = QHBoxLayout()
         btn_row.addStretch(1)
         btn_row.addWidget(self.action_btn)
@@ -76,6 +78,19 @@ class CryptoPanel(QWidget):
         key_grid.addWidget(QLabel("AES (Rijndael):"), 3, 0)
         key_grid.addWidget(self.aes_edit, 3, 1)
 
+        keys_card = QFrame()
+        keys_card.setObjectName("panelCard")
+        keys_layout = QVBoxLayout(keys_card)
+        keys_layout.setContentsMargins(14, 12, 14, 12)
+        keys_layout.setSpacing(8)
+        keys_title = QLabel("Kunci Algoritma")
+        keys_title.setObjectName("fieldLabel")
+        keys_hint = QLabel("Semua kolom kunci wajib diisi.")
+        keys_hint.setObjectName("emptyHint")
+        keys_layout.addWidget(keys_title)
+        keys_layout.addWidget(keys_hint)
+        keys_layout.addLayout(key_grid)
+
         reset_row = QHBoxLayout()
         reset_row.addStretch(1)
         reset_row.addWidget(self.reset_btn)
@@ -84,8 +99,7 @@ class CryptoPanel(QWidget):
         layout.setSpacing(10)
         layout.addWidget(QLabel("Masukan:"))
         layout.addWidget(self.input_edit)
-        layout.addWidget(QLabel("Masukkan Kunci Algoritma:"))
-        layout.addLayout(key_grid)
+        layout.addWidget(keys_card)
         layout.addLayout(btn_row)
         layout.addWidget(QLabel("Hasil:"))
         layout.addWidget(self.output_edit)
@@ -99,17 +113,36 @@ class CryptoPanel(QWidget):
         edit.setEchoMode(QLineEdit.EchoMode.Password)
         return edit
 
+    @staticmethod
+    def _set_error(edit: QLineEdit, flag: bool) -> None:
+        if bool(edit.property("error")) == flag:
+            return
+        edit.setProperty("error", flag)
+        style = edit.style()
+        style.unpolish(edit)
+        style.polish(edit)
+
     def _parse_keys(self) -> Optional[TextKeys]:
         """Baca 4 kolom kunci; None bila ada yang kosong/tidak valid."""
+        edits = (self.vigenere_edit, self.caesar_edit, self.des_edit, self.aes_edit)
         raw = {
-            "vigenere": self.vigenere_edit.text(),
-            "caesar": self.caesar_edit.text(),
-            "des": self.des_edit.text(),
-            "aes": self.aes_edit.text(),
+            "vigenere": edits[0].text(),
+            "caesar": edits[1].text(),
+            "des": edits[2].text(),
+            "aes": edits[3].text(),
         }
-        if any(not v.strip() for v in raw.values()):
+        keys_ok = True
+        for edit, value in zip(edits, raw.values()):
+            empty = not value.strip()
+            if empty and not edit.property("error"):
+                self._set_error(edit, True)
+            if empty:
+                keys_ok = False
+        if not keys_ok:
             self._key_error = "Semua kolom kunci wajib diisi."
             return None
+        for edit in edits:
+            self._set_error(edit, False)
         self._key_error = ""
         return TextKeys(
             vigenere=raw["vigenere"].encode("utf-8"),
@@ -121,11 +154,11 @@ class CryptoPanel(QWidget):
     def _on_action(self) -> None:
         payload = self.input_edit.toPlainText()
         if not payload:
-            self.status_label.setText("Masukan kosong.")
+            self.status_label.error("Masukan kosong.")
             return
         keys = self._parse_keys()
         if keys is None:
-            self.status_label.setText(self._key_error)
+            self.status_label.error(self._key_error)
             return
         try:
             if self.mode == "encrypt":
@@ -138,12 +171,12 @@ class CryptoPanel(QWidget):
             QMessageBox.warning(self, "Gagal", str(exc))
             return
         self.output_edit.setPlainText(result)
-        self.status_label.setText(success_msg)
+        self.status_label.success(success_msg)
 
     def _on_reset(self) -> None:
         """Bersihkan kolom masukan saja (kunci & hasil tetap)."""
         self.input_edit.clear()
-        self.status_label.setText("Input dibersihkan.")
+        self.status_label.info("Input dibersihkan.")
 
 
 class TextTab(QWidget):

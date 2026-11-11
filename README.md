@@ -60,18 +60,15 @@ AplikasiKriptografi/
    `%LOCALAPPDATA%/AplikasiKriptografi/DongleRegistry.json`.
    **Jangan format flashdisk itu lagi** setelah didaftarkan.
 
-3. **Daftarkan akun & rekam wajah (sekali):**
-   ```bash
-   .venv/Scripts/python.exe main.py --setup
-   ```
-   (webcam akan dipakai bila tersedia; bila tidak, akun tetap dibuat tanpa
-   template wajah dan login cukup dengan kata sandi).
-
-4. **Jalankan:**
+3. **Jalankan aplikasi & daftarkan akun dari layar login (GUI):**
    ```bash
    .venv/Scripts/python.exe main.py
    ```
-   Tanpa dongle, aplikasi menolak hidup.
+   Di layar login klik **"Buat Akun Baru"** → isi username & kata sandi →
+   rekam wajah (webcam dipakai bila tersedia) → akun dibuat dan langsung masuk.
+
+4. **Login berikutnya:** satu alur login = username + kata sandi + wajah
+   (wajah wajib; akun tanpa template wajib merekam wajah saat login).
 
 ## Fitur & algoritma (ringkas)
 

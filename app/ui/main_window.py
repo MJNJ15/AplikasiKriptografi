@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from typing import Optional
 
-from PySide6.QtWidgets import QMainWindow, QTabWidget, QWidget
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QMainWindow, QPushButton, QTabWidget, QWidget
 
 from ..core.keys import derive_subkey
 from ..db.database import Database, MessageStore, UserStore
@@ -24,6 +25,8 @@ WINDOW_HEIGHT = 720
 
 
 class MainWindow(QMainWindow):
+    logout_requested = Signal()
+
     def __init__(
         self,
         app_key: bytes,
@@ -53,4 +56,10 @@ class MainWindow(QMainWindow):
         tabs.addTab(asset_tab, "Aset")
         self.setCentralWidget(tabs)
         self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
+
+        logout_btn = QPushButton("Logout")
+        logout_btn.setObjectName("secondaryBtn")
+        logout_btn.setToolTip("Keluar dari akun dan kembali ke layar login")
+        logout_btn.clicked.connect(self.logout_requested)
+        self.statusBar().addPermanentWidget(logout_btn)
         self.statusBar().addPermanentWidget(make_theme_toggle_button())

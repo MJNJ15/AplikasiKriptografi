@@ -3,6 +3,7 @@
 Dialog tidak melakukan verifikasi sendiri — menerima callback:
   - `verify(username, password) -> (ok, pesan)`   (kata sandi)
   - `face_verify(username) -> (ok, pesan)`        (wajah; optional)
+  - `register_handler() -> None`                  (buka dialog daftar akun)
 Bila `face_verify` diberikan, setelah kata sandi cocok verifikasi wajah
 dijalankan otomatis dalam alur login yang sama (tombol login tunggal).
 Bila semua lolos, dialog `accept()`; hasil tersimpan di atribut `username`
@@ -40,6 +41,7 @@ class LoginDialog(QDialog):
         verify: Callable[[str, str], tuple[bool, str]],
         face_verify: Optional[Callable[[str], tuple[bool, str]]] = None,
         initial_username: str = "",
+        register_handler: Optional[Callable[[], None]] = None,
         parent: Optional[QWidget] = None,
     ) -> None:
         super().__init__(parent)
@@ -48,6 +50,7 @@ class LoginDialog(QDialog):
 
         self._verify = verify
         self._face_verify = face_verify
+        self._register_handler = register_handler
         self.username: str = ""
         self.session = None
 
@@ -79,10 +82,15 @@ class LoginDialog(QDialog):
         self.login_btn = QPushButton("Login")
         self.login_btn.setObjectName("primaryBtn")
 
+        self.register_btn = QPushButton("Buat Akun Baru")
+        self.register_btn.setObjectName("secondaryBtn")
+        self.register_btn.setVisible(register_handler is not None)
+
         self.status_label = QLabel("Silakan masuk.")
         self.status_label.setObjectName("statusLabel")
 
         self.login_btn.clicked.connect(self._on_login)
+        self.register_btn.clicked.connect(self._on_register)
         self.password_edit.returnPressed.connect(self._on_login)
 
         card_layout = QVBoxLayout(card)
@@ -98,6 +106,7 @@ class LoginDialog(QDialog):
         card_layout.addWidget(self.password_edit)
         card_layout.addSpacing(18)
         card_layout.addWidget(self.login_btn)
+        card_layout.addWidget(self.register_btn)
         card_layout.addSpacing(6)
         card_layout.addWidget(self.status_label, 0, Qt.AlignmentFlag.AlignHCenter)
 
@@ -110,6 +119,10 @@ class LoginDialog(QDialog):
         footer.addStretch(1)
         footer.addWidget(make_theme_toggle_button())
         outer.addLayout(footer)
+
+    def _on_register(self) -> None:
+        if self._register_handler is not None:
+            self._register_handler()
 
     def _on_login(self) -> None:
         username = self.username_edit.text().strip()

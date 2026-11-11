@@ -30,10 +30,12 @@ from .file_tab import FileTab
 from .icons import load_pixmap
 from .image_tab import ImageTab
 from .text_tab import TextTab
-from .theme import make_theme_toggle_button
+from .theme import current_colors, make_theme_toggle_button
 
 WINDOW_WIDTH = 1100
 WINDOW_HEIGHT = 720
+
+TAB_ICONS = ("text", "file", "db", "image", "asset")
 
 
 class MainWindow(QMainWindow):
@@ -69,6 +71,7 @@ class MainWindow(QMainWindow):
         tabs.addTab(asset_tab, load_pixmap("asset", "#5B6B7A", 18), "Aset")
         tabs.currentChanged.connect(self._on_tab_changed)
         self._tabs = tabs
+        self._update_tab_icons()
 
         header = self._build_header(store, user_id)
 
@@ -112,8 +115,9 @@ class MainWindow(QMainWindow):
 
         chip = QFrame()
         chip.setObjectName("userChip")
+        chip.setFrameShape(QFrame.Shape.NoFrame)
         chip_layout = QHBoxLayout(chip)
-        chip_layout.setContentsMargins(6, 4, 10, 4)
+        chip_layout.setContentsMargins(6, 3, 10, 3)
         chip_layout.setSpacing(6)
         user_icon = QLabel()
         user_icon.setPixmap(load_pixmap("user", "#FFFFFF", 16))
@@ -127,9 +131,13 @@ class MainWindow(QMainWindow):
         logout_btn.setToolTip("Keluar dari akun dan kembali ke layar login")
         logout_btn.clicked.connect(self.logout_requested)
 
+        theme_btn = make_theme_toggle_button(self._update_tab_icons)
+        for control in (chip, logout_btn, theme_btn):
+            control.setFixedHeight(34)
+
         header_layout.addWidget(chip)
         header_layout.addWidget(logout_btn)
-        header_layout.addWidget(make_theme_toggle_button())
+        header_layout.addWidget(theme_btn)
         return header
 
     def showEvent(self, event) -> None:
@@ -137,6 +145,14 @@ class MainWindow(QMainWindow):
         fade_in(self)
 
     def _on_tab_changed(self, index: int) -> None:
+        self._update_tab_icons()
         page = self._tabs.widget(index)
         if page is not None and self.isVisible():
             fade_reveal(page)
+
+    def _update_tab_icons(self) -> None:
+        colors = current_colors()
+        selected = self._tabs.currentIndex()
+        for i, name in enumerate(TAB_ICONS):
+            color = colors["tab_selected_fg"] if i == selected else colors["text_muted"]
+            self._tabs.setTabIcon(i, load_pixmap(name, color, 18))

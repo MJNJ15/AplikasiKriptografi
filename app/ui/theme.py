@@ -34,17 +34,17 @@ from PySide6.QtWidgets import (
 
 _LIGHT = {
     # 30% secondary — surfaces & teks
-    "bg": "#F4F7F9",
-    "card": "#FFFFFF",
-    "border": "#DCE5E8",
-    "border_strong": "#C9D6DA",
+    "bg": "#EFF3F6",
+    "card": "#F8FAFB",
+    "border": "#D3DEE3",
+    "border_strong": "#BCCBD2",
     "text": "#0F172A",
-    "text_muted": "#5B6B7A",
-    "muted_bg": "#EAF1F3",
-    "placeholder": "#8AA0AD",
-    "alternate": "#F1F6F8",
-    "disabled_bg": "#CBD5DB",
-    "disabled_text": "#F2F6F8",
+    "text_muted": "#526272",
+    "muted_bg": "#E2EAEF",
+    "placeholder": "#8398A6",
+    "alternate": "#E9EFF3",
+    "disabled_bg": "#C9D5DB",
+    "disabled_text": "#E4ECF0",
     # 60% main — teal keamanan
     "primary": "#0F766E",
     "primary_hover": "#0D9488",
@@ -69,9 +69,9 @@ _LIGHT = {
     "header_chip": "rgba(255, 255, 255, 0.14)",
     "header_chip_hover": "rgba(255, 255, 255, 0.28)",
     # Scrollbar
-    "handle": "#B9C7CC",
-    "handle_hover": "#9FB3BA",
-    "scroll_track": "#E5EDF0",
+    "handle": "#B2C2CA",
+    "handle_hover": "#97ABB5",
+    "scroll_track": "#DFE8EC",
 }
 
 _DARK = {
@@ -212,7 +212,7 @@ QTabBar::tab {{
     background: transparent;
     color: {t["text_muted"]};
     padding: 10px 20px;
-    margin-right: 2px;
+    margin-right: 8px;
     border-radius: 10px 10px 0 0;
     font-weight: 500;
 }}
@@ -375,15 +375,19 @@ QLabel#brandSubtitle {{
 }}
 QFrame#userChip {{
     background: {t["header_chip"]};
+    border: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: 999px;
-    padding: 4px 14px;
+    padding: 0 14px;
+    min-height: 30px;
 }}
 QFrame#appHeader QPushButton#logoutBtn,
 QFrame#appHeader QPushButton#themeToggle {{
     background: {t["header_chip"]};
     color: {t["header_text"]};
-    border-radius: 8px;
-    padding: 5px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    padding: 0 14px;
+    min-height: 30px;
     font-size: 12px;
     font-weight: 600;
 }}
